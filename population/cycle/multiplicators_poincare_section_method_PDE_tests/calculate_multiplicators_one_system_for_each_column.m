@@ -1,0 +1,19 @@
+function [multiplicators,computation_time] = calculate_multiplicators_one_system_for_each_column( right_parts_of_equations,linearized_system,nspecies,N,w0,tlast,T,tstep,fixed_var_index,fixed_var_value,eps,first_phas_var_index,second_phas_var_index,final_multiplicators_file_path_beginning,intermediate_results_file_path,interp_method )
+%CALCULATE_MULTIPLICATORS_ONE_SYSTEM_FOR_EACH_COLUMN Summary of this function goes here
+%   Detailed explanation goes here
+nvar = nspecies*N;
+[multiplicators,computation_time] = multiplicators_one_system_for_each_monodromy_matrix_column(...
+    right_parts_of_equations,linearized_system,@myode4,0:tstep:tlast,w0,nvar,...
+    intermediate_results_file_path,...
+    fixed_var_index,fixed_var_value,...
+    odeset('NonNegative',1:nvar),...
+    odeset('OutputFcn',@odephas2,'OutputSel',[first_phas_var_index,...
+                                              second_phas_var_index]));
+
+if ~isempty(multiplicators)
+  final_multiplicators_file_path = strcat(final_multiplicators_file_path_beginning,'variations.mat');
+  save(final_multiplicators_file_path,'multiplicators','computation_time');
+end
+
+end
+

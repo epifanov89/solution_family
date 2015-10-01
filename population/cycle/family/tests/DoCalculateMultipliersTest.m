@@ -1,0 +1,126 @@
+classdef DoCalculateMultipliersTest < IsPassedInFunctionCalledTestHelper
+  
+  properties
+    passedInResultsFilename
+    passedInPreyDiffusionCoeff
+    passedInSecondPredatorDiffusionCoeff
+    passedInFirstPredatorMortality
+    passedInResourceDeviation
+    passedInMFilename
+    passedInGetFileDirname
+    passedInGetResultsFilenameForMFile
+    passedInExists
+    passedInLoad
+    passedInMakeDir
+    passedInSave
+    passedInGetPoincareMapLastPoint
+    passedInGetPeriod
+    passedInGetParams
+    passedInCalculateMultipliers
+    passedInSolver
+    passedInPrint
+    passedInDisplay
+  end
+  
+  methods (TestMethodSetup)
+    function setup(testCase)
+      setup@IsPassedInFunctionCalledTestHelper(testCase);
+    end
+  end
+  
+  methods (Access = protected)
+    function fakeFcnToPassIn(testCase,resultsFilename,...
+        preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
+        firstPredatorMortality,resourceDeviation,mfilename,...
+        getFileDirname,getResultsFilenameForMFile,exists,...
+        load,makeDir,save,getPoincareMapLastPoint,getPeriod,getParams,...
+        calculateMultipliers,solver,print,disp)
+      fakeFcnToPassIn@IsPassedInFunctionCalledTestHelper(testCase);
+      testCase.passedInResultsFilename = resultsFilename;
+      testCase.passedInPreyDiffusionCoeff = preyDiffusionCoeff;      
+      testCase.passedInSecondPredatorDiffusionCoeff = ...
+        secondPredatorDiffusionCoeff;
+      testCase.passedInFirstPredatorMortality = firstPredatorMortality;
+      testCase.passedInResourceDeviation = resourceDeviation;
+      testCase.passedInMFilename = mfilename;      
+      testCase.passedInGetFileDirname = getFileDirname;
+      testCase.passedInGetResultsFilenameForMFile = ...
+        getResultsFilenameForMFile;  
+      testCase.passedInExists = exists;
+      testCase.passedInLoad = load;
+      testCase.passedInMakeDir = makeDir;
+      testCase.passedInSave = save;
+      testCase.passedInGetPoincareMapLastPoint = getPoincareMapLastPoint;
+      testCase.passedInGetPeriod = getPeriod;
+      testCase.passedInGetParams = getParams;
+      testCase.passedInCalculateMultipliers = calculateMultipliers;
+      testCase.passedInSolver = solver;
+      testCase.passedInPrint = print;
+      testCase.passedInDisplay = disp;
+    end
+  end
+  
+  methods (Test)
+    function testPassesProperParamsToPassedInFunctionCore(testCase)
+      resultsFilename = 'results_filename';
+      preyDiffusionCoeff = 0;
+      secondPredatorDiffusionCoeff = 1;
+      firstPredatorMortality = 2;
+      resourceDeviation = 3;
+      doCalculateMultipliers(@testCase.fakeFcnToPassIn,resultsFilename,...
+        preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
+        firstPredatorMortality,resourceDeviation);
+      testCase.assertPassedInFunctionCalled();
+      testCase.verifyEqual(testCase.passedInResultsFilename,...
+        resultsFilename,'Передано неправильное имя файлов с результатами');
+      testCase.verifyEqual(testCase.passedInPreyDiffusionCoeff,...
+        preyDiffusionCoeff,...
+        'Передано неправильное значение коэффициента диффузии популяции жертвы');
+      testCase.verifyEqual(testCase.passedInFirstPredatorMortality,...
+        firstPredatorMortality,...
+        'Передано неправильное значение параметра смертности первой популяции хищника');
+      testCase.verifyEqual(testCase.passedInResourceDeviation,...
+        resourceDeviation,...
+        'Передана неправильная амплитуда функции ресурса');
+      testCase.verifyEqual(...
+        testCase.passedInSecondPredatorDiffusionCoeff,...
+        secondPredatorDiffusionCoeff,...
+        'Передано неправильное значение коэффициента диффузии второй популяции хищника');
+      testCase.verifyEqual(testCase.passedInMFilename,@mfilename,...
+        'Передана неправильная функция получения имени файла с кодом');
+      testCase.verifyEqual(testCase.passedInGetFileDirname,...
+        @getFileDirname,...
+        'Передана неправильная функция получения имени папки файла');
+      testCase.verifyEqual(...
+        testCase.passedInGetResultsFilenameForMFile,...
+        @getResultsFilenameForMFile,...
+        'Передана неправильная функция получения пути к файлу результатов для текущего файла с кодом');
+      testCase.verifyEqual(testCase.passedInExists,@exist,...
+        'Передана неправильная функция проверки существования файла/переменной');
+      testCase.verifyEqual(testCase.passedInLoad,@load,...
+        'Передана неправильная функция загрузки переменных из файла');
+      testCase.verifyEqual(testCase.passedInMakeDir,@mkdir,...
+        'Передана неправильная функция создания папки');
+      testCase.verifyEqual(testCase.passedInSave,@saveStruct,...
+        'Передана неправильная функция сохранения переменных в файл');
+      testCase.verifyEqual(testCase.passedInGetPoincareMapLastPoint,...
+        @getPoincareMapLastPoint,...
+        'Передана неправильная функция получения последне точки отображения Пуанкаре');
+      testCase.verifyEqual(testCase.passedInGetPeriod,@getPeriod,...
+        'Передана неправильная функция нахождения периода');
+      testCase.verifyEqual(testCase.passedInGetParams,...
+        @predatorPrey2x1Params,'Переданы неправильные параметры');
+      testCase.verifyEqual(testCase.passedInCalculateMultipliers,...
+        @multipliers_one_system_for_each_monodromy_matrix_column,...
+        'Передана неправильная функция расчета мультипликаторов');
+      testCase.verifyEqual(testCase.passedInSolver,@myode4,...
+        'Передан неправильный решатель');
+      testCase.verifyEqual(testCase.passedInPrint,@fprintf,...
+        'Передана неправильная функция печати');
+      testCase.verifyEqual(testCase.passedInDisplay,@disp,...
+        'Передана неправильная функция печати');
+    end
+  end
+  
+end
+

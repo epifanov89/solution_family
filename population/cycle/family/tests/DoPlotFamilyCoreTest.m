@@ -35,26 +35,7 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       nvar = 6;
       testCase.setupFamilies(nsol,nvar);
     end
-    
-    function setupFamiliesOf11SolutionsForNEqualTo1(testCase)
-      nvar = 3;
-      testCase.setupFamiliesOf11Solutions(nvar);
-    end
-    
-    function setupFamiliesOf11Solutions(testCase,nvar)
-      nsol = 11;
-      
-      family1No = 1;
-      family1FirstPredatorMortality = 1.1;
-      testCase.setupFamilyOf11Solutions(family1No,...
-        family1FirstPredatorMortality,nsol,nvar);
-      
-      family2No = 2;
-      family2FirstPredatorMortality = 1.2;
-      testCase.setupFamilyOf11Solutions(family2No,...
-        family2FirstPredatorMortality,nsol,nvar);
-    end
-    
+            
     function setupFamilyOf11Solutions(testCase,familyNo,...
         firstPredatorMortality,nsol,nvar)  
       familyDirName = sprintf(...
@@ -74,15 +55,18 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     end
     
     function setupFamilies(testCase,nsol,nvar)
-      family1No = 1;
-      family1FirstPredatorMortality = 1.1;
-      testCase.setupFamilySolutions(family1No,...
-        family1FirstPredatorMortality,nsol,nvar);
+      familyNo = 1;
+      familyFirstPredatorMortality = 1.1;
+      setupFamilySolutions();
       
-      family2No = 2;
-      family2FirstPredatorMortality = 1.2;
-      testCase.setupFamilySolutions(family2No,...
-        family2FirstPredatorMortality,nsol,nvar);
+      familyNo = 2;
+      familyFirstPredatorMortality = 1.2;
+      setupFamilySolutions();
+      
+      function setupFamilySolutions()
+        testCase.setupFamilySolutions(familyNo,...
+          familyFirstPredatorMortality,nsol,nvar);
+      end
     end
     
     function setupFamilySolutions(testCase,familyNo,...
@@ -262,7 +246,16 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function verifyGotSolutionPartForTrajectoryPlot(testCase,solVarsVal,...
         pointIndex,msg)
-      testCase.setupFamiliesOf11SolutionsForNEqualTo1();
+      nsol = 11;
+      nvar = 3;
+      
+      familyNo = 1;
+      familyFirstPredatorMortality = 1.1;
+      setupFamilySolutions();
+      
+      familyNo = 2;
+      familyFirstPredatorMortality = 1.2;
+      setupFamilySolutions();
       
       testCase.act();
       
@@ -275,6 +268,11 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       
       testCase.verifyContains(...
         testCase.argsPassedInToGetSolutionPartForTrajectoryPlot,args,msg);
+      
+      function setupFamilySolutions()
+        testCase.setupFamilyOf11Solutions(familyNo,...
+          familyFirstPredatorMortality,nsol,nvar);
+      end
     end
     
     function verifyGotMaxPredatorDensityForNEqualTo1(testCase,sol,...

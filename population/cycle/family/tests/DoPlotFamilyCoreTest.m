@@ -61,31 +61,19 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         '%ssolution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\',...
         testCase.dirname,firstPredatorMortality);
       
-      familyOffset = nsol*(familyNo-1);
-      
       files = [];
       
       solNo = 0;
-      files = testCase.setupSolution(files,familyDirName,familyOffset,...
+      files = testCase.setupSolution(files,familyDirName,familyNo,nsol,...
         solNo,nvar);
       
       solNo = 10;      
-      files = testCase.setupSolution(files,familyDirName,familyOffset,...
+      files = testCase.setupSolution(files,familyDirName,familyNo,nsol,...
         solNo,nvar);
       
       nsol = 11;
-      for solNo = 1:nsol-2
-        files = testCase.setupSolution(files,familyDirName,familyOffset,...
-          solNo,nvar);
-      end
-      
-      listing = struct;      
-      listing.name = strcat(familyDirName,'*.mat');
-      listing.files = files;
-      testCase.listingsToReturnFromDir = ...
-        [testCase.listingsToReturnFromDir,listing];
-      
-      testCase.setupStandaloneSolutions(familyDirName,familyNo,nsol,nvar);
+      testCase.setupRegularSolutionsAndDirListing(nsol-2,files,...
+        familyDirName,familyNo,nsol,nvar);
     end
     
     function setupFamilies(testCase,nsol,nvar)
@@ -105,33 +93,46 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       familyDirName = sprintf(...
         '%ssolution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\',...
         testCase.dirname,firstPredatorMortality);
-      
-      familyOffset = nsol*(familyNo-1);
             
       files = [];
       
       solNo = 0;      
-      files = testCase.setupSolution(files,familyDirName,familyOffset,...
+      files = testCase.setupSolution(files,familyDirName,familyNo,nsol,...
         solNo,nvar);
       
-      for solNo = 1:nsol-1
-        files = testCase.setupSolution(files,familyDirName,familyOffset,...
-          solNo,nvar);
+      testCase.setupRegularSolutionsAndDirListing(nsol-1,files,...
+        familyDirName,familyNo,nsol,nvar);
+    end
+    
+    function setupRegularSolutionsAndDirListing(testCase,solNoFinish,...
+        files,familyDirName,familyNo,nsol,nvar)
+      files = testCase.setupRegularSolutions(solNoFinish,files,...
+        familyDirName,familyNo,nsol,nvar);
+      testCase.setupDirListing(familyDirName,files);
+    end
+    
+    function files = setupRegularSolutions(testCase,solNoFinish,files,...
+        familyDirName,familyNo,nsol,nvar)
+      for solNo = 1:solNoFinish
+        files = testCase.setupSolution(files,familyDirName,familyNo,...
+          nsol,solNo,nvar);
       end
-      
-      listing = struct;      
-      listing.name = strcat(familyDirName,'*.mat');
-      listing.files = files;
-      testCase.listingsToReturnFromDir = ...
-        [testCase.listingsToReturnFromDir,listing];
       
       standaloneSolutionsOffset = nsol*familyNo;
       testCase.setupStandaloneSolutions(familyDirName,...
         standaloneSolutionsOffset,nsol,nvar);
     end
     
+    function setupDirListing(testCase,dirname,files)
+      listing = struct;      
+      listing.name = strcat(dirname,'*.mat');
+      listing.files = files;
+      testCase.listingsToReturnFromDir = ...
+        [testCase.listingsToReturnFromDir,listing];
+    end
+    
     function listing = setupSolution(testCase,listing,familyDirName,...
-        familyOffset,solNo,nvar)
+        familyNo,nsol,solNo,nvar)
       file = struct;
       filename = sprintf('%d.mat',solNo);      
       file.name = filename;
@@ -150,6 +151,7 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
 
       vars = struct;
       vars.sol = w;
+      familyOffset = nsol*(familyNo-1);
       solOffset = familyOffset+solNo;
       vars.row = nvar*solOffset+1:nvar*(solOffset+1);
       vars.rowIndex = -solOffset;
@@ -291,7 +293,8 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function verifyGotMaxNonZeroPredatorDensity(testCase,sol,N,nvar,...
         colIndex,msgStart)
-      testCase.setupFamiliesOf11Solutions(nvar);
+      nsol = 2;
+      testCase.setupFamilies(nsol,nvar);
       testCase.act();   
       
       args.solution = sol;
@@ -510,35 +513,24 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       familyDirName = ...
         'solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\';
       
-      familyOffset = 0;
-            
       files = [];
-      
+      familyNo = 1;
+      nsol = 2;
       solNo = 0;      
       nvar = 3;
-      files = testCase.setupSolution(files,familyDirName,familyOffset,...
+      files = testCase.setupSolution(files,familyDirName,familyNo,nsol,...
         solNo,nvar);
-      
-      nsol = 2;
-      
-      for solNo = 1:nsol-1
-        files = testCase.setupSolution(files,familyDirName,familyOffset,...
-          solNo,nvar);
-      end
-      
-      testCase.setupStandaloneSolutions(familyDirName,familyOffset,...
-        nsol,nvar);
+         
+      files = testCase.setupRegularSolutions(nsol-1,files,familyDirName,...
+        familyNo,nsol,nvar);
       
       folder = struct;
       folder.name = '2.mat';
       folder.isdir = true;
       files = [files,folder];
-      
-      listing = struct;      
-      listing.name = strcat(familyDirName,'*.mat');
-      listing.files = files;
-      testCase.listingsToReturnFromDir = listing;
 
+      testCase.setupDirListing(familyDirName,files);
+      
       testCase.act();      
       testCase.verifyFalse(contains(...
           testCase.filenamesPassedInToLoad,...
@@ -550,34 +542,23 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       familyDirName = ...
         'solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\';
       
-      familyOffset = 0;
-            
       files = [];
-      
+      familyNo = 1;            
+      nsol = 2;
       solNo = 0;      
       nvar = 3;
-      files = testCase.setupSolution(files,familyDirName,familyOffset,...
+      files = testCase.setupSolution(files,familyDirName,familyNo,nsol,...
         solNo,nvar);
       
-      nsol = 2;
-      
-      for solNo = 1:nsol-1
-        files = testCase.setupSolution(files,familyDirName,familyOffset,...
-          solNo,nvar);
-      end
-      
-      testCase.setupStandaloneSolutions(familyDirName,familyOffset,...
-        nsol,nvar);
+      files = testCase.setupRegularSolutions(nsol-1,files,familyDirName,...
+        familyNo,nsol,nvar);
       
       foreignFile = struct;
       foreignFile.name = 'foreign_file.mat';
       foreignFile.isdir = false;      
       files = [files,foreignFile];
       
-      listing = struct;  
-      listing.name = strcat(familyDirName,'*.mat');
-      listing.files = files;
-      testCase.listingsToReturnFromDir = listing;
+      testCase.setupDirListing(familyDirName,files);
       
       testCase.act();
       testCase.verifyTrue(isempty(find(strcmp(...
@@ -691,28 +672,28 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     end
     
     function testGetsMaxSecondPredatorDensityForNEqualTo1(testCase)      
-      sol = 11;
+      sol = 2;
       colIndex = 3;
       testCase.verifyGotMaxPredatorDensityForNEqualTo1(sol,colIndex,...
         'ƒл€ решени€ с нулевой первой попул€цией хищников не получены максимальные плотности второй попул€ции хищников в центральной точке ареала');
     end
     
     function testGetsMaxSecondPredatorDensityForNEqualTo2(testCase)      
-      sol = 11;
+      sol = 2;
       colIndex = 6;
       testCase.verifyGotMaxPredatorDensityForNEqualTo2(sol,colIndex,...
         'ƒл€ решени€ с нулевой первой попул€цией хищников не получены максимальные плотности второй попул€ции хищников в центральной точке ареала');
     end
     
     function testGetsMaxFirstPredatorDensityForNEqualTo1(testCase)
-      sol = 12;
+      sol = 3;
       colIndex = 2;
       testCase.verifyGotMaxPredatorDensityForNEqualTo1(sol,colIndex,...
         'ƒл€ решени€ с нулевой второй попул€цией хищников не получены максимальные плотности первой попул€ции хищников в центральной точке ареала');
     end
     
     function testGetsMaxFirstPredatorDensityForNEqualTo2(testCase)      
-      sol = 12;
+      sol = 3;
       colIndex = 4;
       testCase.verifyGotMaxPredatorDensityForNEqualTo2(sol,colIndex,...
         'ƒл€ решени€ с нулевой второй попул€цией хищников не получены максимальные плотности первой попул€ции хищников в центральной точке ареала');

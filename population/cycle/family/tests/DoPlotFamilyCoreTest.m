@@ -52,8 +52,17 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function setupFamilyOf2Solutions(testCase,familyNo,...
         firstPredatorMortality,nvar)
-      nsol = 2;
+      files = testCase.setupFamilySolutions(firstPredatorMortality,...
+        familyNo,nvar);
       
+      nsol = 2;      
+      testCase.setupStandaloneSolutionsAndDirListing(files,...
+        firstPredatorMortality,familyNo,nsol,nvar);
+    end
+    
+    function files = setupFamilySolutions(testCase,...
+        firstPredatorMortality,familyNo,nvar)
+      nsol = 2;
       files = testCase.setupFamilyFirstSolution(firstPredatorMortality,...
         familyNo,nsol,nvar);
       
@@ -64,9 +73,6 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         firstPredatorMortality);
       files = testCase.setupSolution(files,filename,filepath,familyNo,...
         nsol,solNo,nvar);
-      
-      testCase.setupStandaloneSolutionsAndDirListing(files,...
-        firstPredatorMortality,familyNo,nsol,nvar);
     end
         
     function files = setupFamilyFirstSolution(testCase,...
@@ -83,9 +89,8 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function setupStandaloneSolutionsAndDirListing(testCase,...
         files,firstPredatorMortality,familyNo,nsol,nvar)
-      standaloneSolutionsOffset = nsol*familyNo;
-      testCase.setupStandaloneSolutions(firstPredatorMortality,...
-        standaloneSolutionsOffset,nsol,nvar);
+      testCase.setupStandaloneSolutions(firstPredatorMortality,familyNo,...
+        nsol,nvar);
       
       testCase.setupDirListing(firstPredatorMortality,files);
     end
@@ -130,18 +135,24 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     function setupStandaloneSolutionsForNEqualTo1(testCase)
       nsol = 0;
       nvar = 3;
-      family1FirstPredatorMortality = 1.1;
-      family1No = 1;
-      testCase.setupStandaloneSolutions(family1FirstPredatorMortality,...
-        family1No,nsol,nvar);
-      family2FirstPredatorMortality = 1.2;
-      family2No = 2;
-      testCase.setupStandaloneSolutions(family2FirstPredatorMortality,...
-        family2No,nsol,nvar);
+      
+      firstPredatorMortality = 1.1;
+      familyNo = 1;
+      setupFamilyStandaloneSolutions();
+      firstPredatorMortality = 1.2;
+      familyNo = 2;
+      setupFamilyStandaloneSolutions();
+      
+      function setupFamilyStandaloneSolutions()
+        testCase.setupStandaloneSolutions(firstPredatorMortality,...
+          familyNo,nsol,nvar);
+      end
     end
 
     function setupStandaloneSolutions(testCase,firstPredatorMortality,...
-        standaloneSolutionsOffset,nsol,nvar)
+        familyNo,nsol,nvar)      
+      standaloneSolutionsOffset = nsol*familyNo;
+      
       sol = nsol;
       setupZeroOnePredatorSolution(sprintf(...
           'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\zeroFirstPredator.mat',...
@@ -200,6 +211,18 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       testCase.listingsToReturnFromDir = listing;
       testCase.verifyErrorNotAllFilesExist(...
         'Не выброшено исключение, несмотря на то что нет файлов для загрузки');
+    end
+    
+    function verifyErrorIfSomeFilesAreMissing(testCase,file1,file2)
+      testCase.setupStandaloneSolutionsForNEqualTo1();
+            
+      listing = struct;
+      listing.name = ...
+        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\*.mat';
+      listing.files = [file1,file2];
+      testCase.listingsToReturnFromDir = listing;
+      testCase.verifyErrorNotAllFilesExist(...
+        'Не выброшено исключение, несмотря на то что некоторые файлы отсутствуют');
     end
     
     function verifyErrorNotAllFilesExist(testCase,msg)
@@ -535,55 +558,40 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       testCase.verifyErrorIfThereAreNoFilesToLoadFrom(foreignFile);
     end
     
-    function testThrowsExceptionIfSomeFilesAreMissing(testCase)
-      testCase.setupStandaloneSolutionsForNEqualTo1();
-            
-      listing = struct;
-      listing.name = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\*.mat';
+    function testThrowsExceptionIfFilesInTheMiddleAreMissing(testCase)
       file1 = struct;
       file1.name = '0.mat';
       file1.isdir = false;
+      
       file2 = struct;
       file2.name = '2.mat';
       file2.isdir = false;
-      listing.files = [file1,file2];
-      testCase.listingsToReturnFromDir = listing;
-      testCase.assertError(@testCase.act,...
-        'plotFamily:AllFilesMustExist',...
-        'Не выброшено исключение, несмотря на то что некоторые файлы отсутствуют');
-                 
+      
+      testCase.verifyErrorIfSomeFilesAreMissing(file1,file2);                 
+    end
+    
+    function testThrowsExceptionIfFilesAtStartAreMissing(testCase)
       file1 = struct;
       file1.name = '2.mat';
       file1.isdir = false;
+      
       file2 = struct;
       file2.name = '3.mat';
       file2.isdir = false;
-      testCase.listingsToReturnFromDir.files = [file1,file2];
-   
-      testCase.verifyError(@testCase.act,...
-        'plotFamily:AllFilesMustExist',...
-        'Не выброшено исключение, несмотря на то что некоторые файлы отсутствуют');
+      
+      testCase.verifyErrorIfSomeFilesAreMissing(file1,file2);            
     end
     
     function testDoesNotAttemptToLoadFromFolders(testCase)      
       firstPredatorMortality = 1.1;
-      familyNo = 1;
-      nsol = 2;  
+      familyNo = 1;      
       nvar = 3;
-      files = testCase.setupFamilyFirstSolution(firstPredatorMortality,...
-        familyNo,nsol,nvar);
-         
-      solNo = 1;
-      filename = '1.mat';
-      filepath = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\1.mat';
-      files = testCase.setupSolution(files,filename,filepath,familyNo,...
-        nsol,solNo,nvar);
+      files = testCase.setupFamilySolutions(firstPredatorMortality,...
+        familyNo,nvar);
       
-      standaloneSolutionsOffset = nsol*familyNo;
-      testCase.setupStandaloneSolutions(firstPredatorMortality,...
-        standaloneSolutionsOffset,nsol,nvar);
+      nsol = 2;  
+      testCase.setupStandaloneSolutions(firstPredatorMortality,familyNo,...
+        nsol,nvar);
       
       folder = struct;
       folder.name = '2.mat';
@@ -601,22 +609,14 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function testDoesNotLoadFromForeignFiles(testCase)      
       firstPredatorMortality = 1.1;
-      familyNo = 1;            
-      nsol = 2;   
+      familyNo = 1;         
       nvar = 3;
-      files = testCase.setupFamilyFirstSolution(firstPredatorMortality,...
-        familyNo,nsol,nvar);
+      files = testCase.setupFamilySolutions(firstPredatorMortality,...
+        familyNo,nvar);
       
-      solNo = 1;
-      filename = '1.mat';
-      filepath = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\1.mat';
-      files = testCase.setupSolution(files,filename,filepath,familyNo,...
-        nsol,solNo,nvar);
-      
-      standaloneSolutionsOffset = nsol*familyNo;
+      nsol = 2;         
       testCase.setupStandaloneSolutions(firstPredatorMortality,...
-        standaloneSolutionsOffset,nsol,nvar);
+        familyNo,nsol,nvar);
       
       foreignFile = struct;
       foreignFile.name = 'foreign_file.mat';

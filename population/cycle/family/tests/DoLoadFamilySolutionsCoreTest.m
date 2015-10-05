@@ -1,5 +1,5 @@
 classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
-    FakeCurrentDirNameHelper & FakeMultipleLoadHelper
+    FakeCurrentDirNameHelper & LoadFamilyTestHelper
   
   properties    
     namePassedInToDir
@@ -10,6 +10,7 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
   
   methods (TestMethodSetup)
     function setup(testCase)
+      setup@LoadFamilyTestHelper(testCase);
       testCase.familyName = 'family_p=1+0,5sin(2 pi x)';
     end
   end
@@ -48,7 +49,6 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
     
     function testDoesNotAttemptToLoadFromFolders(testCase)
       testCase.setupSimpleFamilyName();
-      testCase.filenamesPassedInToLoad = {};
       
       folder = struct;
       folder.name = 'family_0.mat';
@@ -78,7 +78,6 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
     
     function testDoesNotLoadFromForeignFiles(testCase)      
       testCase.setupSimpleFamilyName();
-      testCase.filenamesPassedInToLoad = {};
       
       foreignFile = struct;
       foreignFile.name = 'foreign_file.mat';

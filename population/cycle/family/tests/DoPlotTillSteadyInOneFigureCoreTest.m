@@ -1,6 +1,6 @@
 classdef DoPlotTillSteadyInOneFigureCoreTest < ...
     FakeCurrentDirNameHelper & LoadTestHelper...
-      & MultiplePlotsOnSameFigureTestHelper
+      & MultiplePlotsOnSameFigureSingleFigureTestHelper
   
   properties
     resultsFilename        
@@ -10,6 +10,7 @@ classdef DoPlotTillSteadyInOneFigureCoreTest < ...
   
   methods (TestMethodSetup)
     function setup(testCase)                  
+      setup@MultiplePlotsOnSameFigureSingleFigureTestHelper(testCase);
       testCase.tstart = 1;
       testCase.tspan = 1;
       
@@ -21,19 +22,6 @@ classdef DoPlotTillSteadyInOneFigureCoreTest < ...
   end
   
   methods (Access = private)
-    function fakeLabel(~,varargin)
-    end
-    
-    function fakeXLabel(~,varargin)
-    end
-    
-    function h = fakeGCA(~)      
-      h = [];
-    end
-    
-    function fakeSet(~,varargin)
-    end
-    
     function setupSolution(testCase,ncol)    
       nrow = length(testCase.varsToLoad.t);
       w = zeros(nrow,ncol);
@@ -41,6 +29,37 @@ classdef DoPlotTillSteadyInOneFigureCoreTest < ...
         w(row,:) = (row-1)*ncol+1:row*ncol;
       end
       testCase.varsToLoad.w = w;
+    end
+    
+    function verifyPredatorTimeDependencyPlottedForNEqualTo1(testCase,...
+        predatorCenterPointVarIndex,msgStart)
+      N = 1;
+      nvar = 3;
+      testCase.verifyPredatorTimeDependencyPlotted(N,nvar,...
+        predatorCenterPointVarIndex,msgStart);
+    end
+    
+    function verifyPredatorTimeDependencyPlottedForNEqualTo2(testCase,...
+        predatorCenterPointVarIndex,msgStart)
+      N = 2;
+      nvar = 6;
+      testCase.verifyPredatorTimeDependencyPlotted(N,nvar,...
+        predatorCenterPointVarIndex,msgStart);
+    end
+    
+    function verifyPredatorTimeDependencyPlotted(testCase,N,nvar,...
+        predatorCenterPointVarIndex,msgStart)
+      testCase.setupSolution(nvar);      
+      nrow = testCase.tspan+1;
+      ncol = 2;
+      expLine = zeros(nrow,ncol);
+      expLine(:,1) = testCase.tstart:testCase.tstart+testCase.tspan; 
+      for row = 1:nrow
+        offset = (testCase.tstart+row-1)*nvar;
+        expLine(row,ncol) = offset+predatorCenterPointVarIndex;
+      end
+      msg = sprintf('%s при N = %d',msgStart,N);
+      testCase.verifyLinePlotted(expLine,msg);
     end
     
     function verifyDensityTimeDependenciesPlotted(testCase,N,nvar,...
@@ -115,24 +134,58 @@ classdef DoPlotTillSteadyInOneFigureCoreTest < ...
       testCase.verifySolutionLoaded(filename,varnames);
     end
     
-    function testPlotsDensityTimeDependenciesForNEqualTo1(testCase)      
-      N = 1;      
-      nvar = 3;
-      firstPredatorCenterPointVarIndex = 2;
-      secondPredatorCenterPointVarIndex = 3;
-      testCase.verifyDensityTimeDependenciesPlotted(N,nvar,...
-        firstPredatorCenterPointVarIndex,...
-        secondPredatorCenterPointVarIndex);
+    function testPlotsFirstPredatorTimeDependencyForNEqualTo1(testCase)
+      predatorCenterPointVarIndex = 2;
+      testCase.verifyPredatorTimeDependencyPlottedForNEqualTo1(...
+        predatorCenterPointVarIndex,...
+        'Не выведен график первого хищника');
     end
     
-    function testPlotsDensityTimeDependenciesForNEqualTo2(testCase)      
-      N = 2;      
-      nvar = 6;
-      firstPredatorCenterPointVarIndex = 4;
-      secondPredatorCenterPointVarIndex = 6;
-      testCase.verifyDensityTimeDependenciesPlotted(N,nvar,...
-        firstPredatorCenterPointVarIndex,...
-        secondPredatorCenterPointVarIndex);
+    function testPlotsFirstPredatorTimeDependencyForNEqualTo2(testCase)
+      predatorCenterPointVarIndex = 4;
+      testCase.verifyPredatorTimeDependencyPlottedForNEqualTo2(...
+        predatorCenterPointVarIndex,...
+        'Не выведен график первого хищника');
+    end
+    
+    function testPlotsSecondPredatorTimeDependencyForNEqualTo1(testCase)
+      predatorCenterPointVarIndex = 3;
+      testCase.verifyPredatorTimeDependencyPlottedForNEqualTo1(...
+        predatorCenterPointVarIndex,...
+        'Не выведен график второго хищника');
+    end
+    
+    function testPlotsSecondPredatorTimeDependencyForNEqualTo2(testCase)
+      predatorCenterPointVarIndex = 6;
+      testCase.verifyPredatorTimeDependencyPlottedForNEqualTo2(...
+        predatorCenterPointVarIndex,...
+        'Не выведен график второго хищника');
+    end
+    
+%     function testPlotsDensityTimeDependenciesForNEqualTo1(testCase)      
+%       N = 1;      
+%       nvar = 3;
+%       firstPredatorCenterPointVarIndex = 2;
+%       secondPredatorCenterPointVarIndex = 3;
+%       testCase.verifyDensityTimeDependenciesPlotted(N,nvar,...
+%         firstPredatorCenterPointVarIndex,...
+%         secondPredatorCenterPointVarIndex);
+%     end
+%     
+%     function testPlotsDensityTimeDependenciesForNEqualTo2(testCase)      
+%       N = 2;      
+%       nvar = 6;
+%       firstPredatorCenterPointVarIndex = 4;
+%       secondPredatorCenterPointVarIndex = 6;
+%       testCase.verifyDensityTimeDependenciesPlotted(N,nvar,...
+%         firstPredatorCenterPointVarIndex,...
+%         secondPredatorCenterPointVarIndex);
+%     end
+
+    function testDoesNotOverwritePlots(testCase)
+      nvar = 3;
+      testCase.setupSolution(nvar);
+      testCase.verifyPlotsAreNotOverwrited();
     end
   end
   

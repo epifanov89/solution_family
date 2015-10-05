@@ -5,8 +5,7 @@ classdef GetZeroFirstPredatorInitialDataTest < matlab.unittest.TestCase
   methods (Test)
     function testFirstPredatorZero(testCase)
       N = 10;
-      h = 0.1;
-      ic = getZeroFirstPredatorInitialData(N,h);
+      ic = getZeroFirstPredatorInitialData(N);
       actFirstPredatorIC = ic(N+1:2*N);
       expFirstPredatorIC = zeros(1,N);
       testCase.assertGreaterThan(length(ic),0,...

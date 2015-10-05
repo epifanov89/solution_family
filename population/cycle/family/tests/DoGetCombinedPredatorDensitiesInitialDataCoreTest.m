@@ -1,6 +1,6 @@
 classdef DoGetCombinedPredatorDensitiesInitialDataCoreTest < ...
     matlab.unittest.TestCase & FakeCurrentDirNameHelper...
-    & FakeMultipleLoadHelper
+    & MultipleLoadTestHelper
   
   properties
     paramPassedInToGetFilename

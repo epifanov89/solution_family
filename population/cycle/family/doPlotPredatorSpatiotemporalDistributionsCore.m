@@ -90,7 +90,9 @@ plotSpeciesDensity(tperiodSparseB,wperiodSparseB);
   end
 
   function plotSpeciesDensity(tplot,wplot)
-    h = subplot(2,2,pos);
+    nrow = 2;
+    ncol = 2;
+    h = subplot(nrow,ncol,pos);
     pos = pos+1;
     gr = plot3D(h,X(1:N),tplot,wplot(:,(species-1)*N+1:species*N));
     set(gr,'EdgeColor',[0 0 0]);

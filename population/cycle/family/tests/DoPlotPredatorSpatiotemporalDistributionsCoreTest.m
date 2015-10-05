@@ -1,6 +1,6 @@
 classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
     matlab.unittest.TestCase & FakeCurrentDirNameHelper...
-    & FakeMultipleLoadHelper & SubplotTestHelper
+      & MultipleLoadTestHelper & SubplotTestHelper
   
   properties
     argsPassedInToGetLastRowWithExtremeElementValue
@@ -24,15 +24,6 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
       testCase.solutionParts = [];
       testCase.argsPassedInToPlot3D = [];
       testCase.argsPassedInToAxis = [];
-    end
-  end
-  
-  methods (Access = protected)
-    function setupAxesHandlesToReturnFromSubplot(testCase,pos,handle)
-      nrow = 2;
-      ncol = 2;
-      setupAxesHandlesToReturnFromSubplot@SubplotTestHelper(testCase,...
-        nrow,ncol,pos,handle);
     end
   end
   
@@ -364,6 +355,18 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         lastPointWithExtremeVarValueIndexB,...
         preLastPointWithExtremeVarValueIndexA,...
         preLastPointWithExtremeVarValueIndexB);
+      pos = 1;
+      axesHandle = 1;
+      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      pos = 2;
+      axesHandle = 2;
+      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      pos = 3;
+      axesHandle = 3;
+      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      pos = 4;
+      axesHandle = 4;
+      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
       testCase.act();      
       testCase.verifyFalse(isempty(find(arrayfun(@(a)...
         a.handle == handle && a.lims(1) <= 0 && a.lims(2) >= 1 ... 
@@ -589,10 +592,7 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
     end
     
     function testSolutionAFirstPredatorPlotFitsInLimits(testCase)    
-      pos = 1;
-      handle = 1;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
+      handle = 1;      
       ZMin = 1;
       ZMax = 301;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
@@ -600,21 +600,15 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
     end
     
     function testSolutionBFirstPredatorPlotFitsInLimits(testCase)      
-      pos = 2;
       handle = 2;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
       ZMin = 601;
       ZMax = 901;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
         'График первого хищника для решения B не помещается в границах рисунка');
     end
     
-    function testSolutionASecondPredatorPlotFitsInLimits(testCase)      
-      pos = 3;
+    function testSolutionASecondPredatorPlotFitsInLimits(testCase)
       handle = 3;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
       ZMin = 2;
       ZMax = 302;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
@@ -622,10 +616,7 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
     end
     
     function testSolutionBSecondPredatorPlotFitsInLimits(testCase)
-      pos = 4;
       handle = 4;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
       ZMin = 602;
       ZMax = 902;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...

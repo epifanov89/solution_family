@@ -239,12 +239,12 @@ classdef DoCalculateMultipliersCoreTest < ...
   methods (Test)
     function testGetsMFilename(testCase)
       testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
-      testGetsMFilename@MFilenameAndGetFileDirnameTestBase(testCase);
+      testCase.verifyGotMFilename();
     end
     
     function testGetsFileDirname(testCase)
       testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
-      testGetsFileDirname@MFilenameAndGetFileDirnameTestBase(testCase);
+      testCase.verifyGotFileDirname();
     end
     
     function testLoadsSolution(testCase)

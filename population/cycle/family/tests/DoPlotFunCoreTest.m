@@ -34,7 +34,9 @@ classdef DoPlotFunCoreTest < PlotTestHelperBase
       testCase.funPassedInToFPlot = fun;
       testCase.limitsPassedInToFPlot = limits;
     end
+  end
     
+  methods (Access = protected)
     function fakeXLabel(testCase,~,str,varargin) 
       testCase.strPassedInToXLabel = str;
       

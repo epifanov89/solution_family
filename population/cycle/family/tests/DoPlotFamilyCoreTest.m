@@ -1,10 +1,10 @@
 classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
-    & MultipleLoadTestHelper & MultiplePlotsOnSameFigureTestHelper
+    & LoadFamilyTestHelper & SubplotTestHelper...
+    & MultiplePlotsOnSameFigureMultipleFiguresTestHelper
   
   properties
     namePassedInToDir
-    listingsToReturnFromDir
-    filenamesPassedInToLoad
+    listingsToReturnFromDir    
     argsPassedInToGetLastRowWithExtremeElementValue
     varsToReturnFromGetLastRowWithExtremeElementValue
     argsPassedInToGetSolutionPartForTrajectoryPlot
@@ -15,9 +15,9 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
   
   methods (TestMethodSetup)
     function setup(testCase)
-      setup@MultiplePlotsOnSameFigureTestHelper(testCase);
+      setup@LoadFamilyTestHelper(testCase);
+      setup@MultiplePlotsOnSameFigureMultipleFiguresTestHelper(testCase);
       testCase.dirname = 'dir\';
-      testCase.filenamesPassedInToLoad = {};
       testCase.solutionPartsForTrajectoryPlot = {};
       testCase.getSolutionPartForTrajectoryPlotCallNo = 1;
       testCase.plottedPoints = {};     
@@ -124,8 +124,7 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
 
       vars = struct;
       vars.sol = w;
-      familyOffset = nsol*(familyNo-1);
-      solOffset = familyOffset+solNo;
+      solOffset = nsol*(familyNo-1)+solNo;
       vars.row = nvar*solOffset+1:nvar*(solOffset+1);
       vars.rowIndex = -solOffset;
       testCase.varsToReturnFromGetLastRowWithExtremeElementValue = ...
@@ -414,28 +413,38 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         msg);
     end
     
-    function verifyLinePlottedForNEqualTo1(testCase,line,msgStart)
-      N = 1;
-      testCase.setupFamiliesForNEqualTo1();      
-      testCase.verifyLinePlotted(N,line,msgStart);
+    function verifyPlottedOnFirstSubplot(~,verifyFun)
+      pos = 1;
+      handle = 25;
+      verifyFun(pos,handle);
     end
     
-    function verifyLinePlottedForNEqualTo2(testCase,line,msgStart)
+    function verifyLinePlottedForNEqualTo1(testCase,pos,handle,line,...
+        msgStart)
+      N = 1;
+      testCase.setupFamiliesForNEqualTo1();      
+      testCase.verifyLinePlotted(pos,handle,N,line,msgStart);
+    end
+    
+    function verifyLinePlottedForNEqualTo2(testCase,pos,handle,line,...
+        msgStart)
       N = 2;
       testCase.setupFamiliesForNEqualTo2();
-      testCase.verifyLinePlotted(N,line,msgStart);
+      testCase.verifyLinePlotted(pos,handle,N,line,msgStart);
     end
     
-    function verifyPointPlottedForNEqualTo1(testCase,pt,msgStart)
+    function verifyPointPlottedForNEqualTo1(testCase,pos,handle,pt,...
+        msgStart)
       N = 1;
       testCase.setupFamiliesForNEqualTo1();      
-      testCase.verifyPointPlotted(N,pt,msgStart);
+      testCase.verifyPointPlotted(pos,handle,N,pt,msgStart);
     end
       
-    function verifyPointPlottedForNEqualTo2(testCase,pt,msgStart)
+    function verifyPointPlottedForNEqualTo2(testCase,pos,handle,pt,...
+        msgStart)
       N = 2;
       testCase.setupFamiliesForNEqualTo2();      
-      testCase.verifyPointPlotted(N,pt,msgStart);
+      testCase.verifyPointPlotted(pos,handle,N,pt,msgStart);
     end
     
     function str = getMsg(~,msgStart,N)
@@ -444,8 +453,8 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function files = fakeDir(testCase,name)
       testCase.namePassedInToDir = name;      
-      listing = getArrayItem(testCase.listingsToReturnFromDir,...
-        @(l) strcmp(l.name,name));
+      listing = getArrayItems(@(l) strcmp(l.name,name),...
+        testCase.listingsToReturnFromDir);
       files = listing.files;
     end
 
@@ -490,25 +499,27 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
   end 
    
   methods (Access = protected)
-    function verifyLinePlotted(testCase,N,line,msgStart)
+    function verifyLinePlotted(testCase,pos,handle,N,line,msgStart)
+      testCase.setupSubplot(pos,handle);
       msg = testCase.getMsg(msgStart,N);
-      verifyLinePlotted@MultiplePlotsOnSameFigureTestHelper(testCase,...
-        line,msg);
+      verifyLinePlotted@MultiplePlotsOnSameFigureMultipleFiguresTestHelper(...
+        testCase,handle,line,msg);
     end
     
-    function verifyPointPlotted(testCase,N,pt,msgStart)
+    function verifyPointPlotted(testCase,pos,handle,N,data,msgStart)
+      testCase.setupSubplot(pos,handle);      
+      testCase.act();
+      pt = struct;
+      pt.handle = handle;
+      pt.data = data;
       msg = testCase.getMsg(msgStart,N);
-      verifyPointPlotted@MultiplePlotsOnSameFigureTestHelper(testCase,...
-        pt,msg);
+      testCase.verifyContains(testCase.plottedPoints,pt,msg);
     end
     
-    function vars = fakeLoad(testCase,filename,varargin)      
-      testCase.filenamesPassedInToLoad = ...
-        [testCase.filenamesPassedInToLoad,filename];
-      vars = fakeLoad@MultipleLoadTestHelper(testCase,filename,varargin);
-    end
-    
-    function processPointPlot(testCase,pt)
+    function processPointPlot(testCase,handle,data)
+      pt = struct;
+      pt.handle = handle;
+      pt.data = data;
       testCase.plottedPoints = [testCase.plottedPoints,pt];
     end
     
@@ -518,9 +529,18 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         @testCase.fakeLoad,...
         @testCase.fakeGetLastRowWithExtremeElementValue,...
         @testCase.fakeGetSolutionPartForTrajectoryPlot,...
-        @testCase.fakePlot,@testCase.fakeHold,...
+        @testCase.fakeSubplot,@testCase.fakePlot,@testCase.fakeHold,...
         @testCase.fakeLabel,@testCase.fakeXLabel,@testCase.fakeYLabel,...
         @testCase.fakeGCA,@testCase.fakeSet);
+    end
+  end
+  
+  methods (Access = private)
+    function setupSubplot(testCase,pos,handle)
+      axes = struct;
+      axes.pos = pos;
+      axes.handle = handle;
+      testCase.axesHandlesToReturnFromSubplot = axes;
     end
   end
   
@@ -778,88 +798,137 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
 %         'Не все графики выведены на одном рисунке');
 %     end
     
+    function testCreatesFirstSubplot(testCase)
+      testCase.setupFamiliesForNEqualTo1();
+      testCase.act();
+      args = struct;
+      args.nrow = 1;
+      args.ncol = 2;
+      args.pos = 1;
+      testCase.verifyContains(testCase.argsPassedInToSubplot,args,...
+        'Не создана первая область окна');
+    end
+
     function testPlotsFamilyMaxPredatorDensitiesForNEqualTo1(testCase)
       expLine = [2 3
                  5 6];
-      testCase.verifyLinePlottedForNEqualTo1(expLine,...
-        'Не выведены максимумы хищников в центральной точке ареала для решений семейства');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
+          handle,expLine,...
+          'Не выведены максимумы хищников в центральной точке ареала для решений семейства'));
     end
     
     function testPlotsFamilyMaxPredatorDensitiesForNEqualTo2(testCase)      
       expLine = [ 4  6
                  10 12];
-      testCase.verifyLinePlottedForNEqualTo2(expLine,...
-        'Не выведены максимумы хищников в центральной точке ареала для решений семейства');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
+          handle,expLine,...
+          'Не выведены максимумы хищников в центральной точке ареала для решений семейства'));
     end
     
     function testPlotsMaxSecondPredatorForZeroFirstPredatorForNEqualTo1(testCase)
-      expPoint = [8 9];
-      testCase.verifyPointPlottedForNEqualTo1(expPoint,...
-        'Не выведена максимальная плотность второй популяции хищников в центральной точке ареала');
+      expPoint = [8 9];      
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность второй популяции хищников в центральной точке ареала'));
     end
     
     function testPlotsMaxSecondPredatorForZeroFirstPredatorForNEqualTo2(testCase)
       expPoint = [16 18];
-      testCase.verifyPointPlottedForNEqualTo2(expPoint,...
-        'Не выведена максимальная плотность второй популяции хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность второй популяции хищников в центральной точке ареала'));
     end
     
     function testPlotsMaxFirstPredatorForZeroSecondPredatorForNEqualTo1(testCase)
       expPoint = [11 12];
-      testCase.verifyPointPlottedForNEqualTo1(expPoint,...
-        'Не выведена максимальная плотность первой популяции хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность первой популяции хищников в центральной точке ареала'));
     end
     
     function testPlotsMaxFirstPredatorForZeroSecondPredatorForNEqualTo2(testCase)
       expPoint = [22 24];
-      testCase.verifyPointPlottedForNEqualTo2(expPoint,...
-        'Не выведена максимальная плотность первой популяции хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность первой популяции хищников в центральной точке ареала'));
     end
     
     function testPlotsFirstSolutionTrajectoryForNEqualTo1(testCase)
       expLine = [14 15
                  17 18];
-      testCase.verifyLinePlottedForNEqualTo1(expLine,...
-        'Не выведена первая траектория установления хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
+          handle,expLine,...
+          'Не выведена первая траектория установления хищников в центральной точке ареала'));
     end
     
     function testPlotsFirstSolutionTrajectoryForNEqualTo2(testCase)
       expLine = [28 30
                  34 36];
-      testCase.verifyLinePlottedForNEqualTo2(expLine,...
-        'Не выведена первая траектория установления хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
+          handle,expLine,...
+          'Не выведена первая траектория установления хищников в центральной точке ареала'));
     end
     
     function testPlotsSecondSolutionTrajectoryForNEqualTo1(testCase)
       expLine = [20 21
                  23 24];
-      testCase.verifyLinePlottedForNEqualTo1(expLine,...
-        'Не выведена вторая траектория установления хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
+          handle,expLine,...
+          'Не выведена вторая траектория установления хищников в центральной точке ареала'));
     end
     
     function testPlotsSecondSolutionTrajectoryForNEqualTo2(testCase)
       expLine = [40 42
                  46 48];
-      testCase.verifyLinePlottedForNEqualTo2(expLine,...
-        'Не выведена вторая траектория установления хищников в центральной точке ареала');
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
+          handle,expLine,...
+          'Не выведена вторая траектория установления хищников в центральной точке ареала'));
     end
     
     function testDoesNotOverwritePlots(testCase)
       testCase.setupFamiliesForNEqualTo1();
-      testCase.act();
-      holdOnCallIndices = find(arrayfun(@(call) strcmp(call.fcn,'hold') ...
-        && strcmp(call.args.arg,'on'),testCase.callSequence));
+      pos = 1;
+      handle = 25;
+      testCase.setupSubplot(pos,handle);
+      testCase.act(); 
+      
+      callInfo = struct;
+      callInfo.fcn = 'hold';
+      args = struct;
+      args.handle = handle;
+      args.arg = 'on';
+      callInfo.args = args;
+      holdOnCallIndices = getArrayItemIndices(...
+        callInfo,testCase.callSequence);
       testCase.assertFalse(isempty(holdOnCallIndices),...
         'Некоторые графики затираются следующими');
-      plotCallIndices = find(...
-        arrayfun(@(call) strcmp(call.fcn,'plot'),...
-        testCase.callSequence));
+      
+      callInfo.fcn = 'plot';
+      args = struct;
+      args.handle = handle;
+      callInfo.args = args;
+      plotCallIndices = getArrayItemIndices(...
+        callInfo,testCase.callSequence);
       plotBeforeHoldOnIndices = find(plotCallIndices < holdOnCallIndices(1));
       testCase.assertLessThanOrEqual(length(plotBeforeHoldOnIndices),1,...
         'Некоторые графики затираются следующими');
-      holdOffCallIndices = find(arrayfun(...
-        @(call) strcmp(call.fcn,'hold') && strcmp(call.args.arg,'off'),...
-        testCase.callSequence));
+      
+      callInfo.fcn = 'hold';
+      args = struct;
+      args.arg = 'off';
+      callInfo.args = args;
+      holdOffCallIndices = getArrayItemIndices(...
+        callInfo,testCase.callSequence);
       holdOffBeforeLastPlotCallIndices = find(...
         holdOffCallIndices < plotCallIndices(end),1);
       testCase.verifyTrue(isempty(holdOffBeforeLastPlotCallIndices),...

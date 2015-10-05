@@ -1,4 +1,4 @@
-function item = getArrayItem( arr,func )
+function mask = getArrayIndexMask( func,arr )
 
 if iscell(arr)
   fun = @cellfun;
@@ -6,7 +6,6 @@ else
   fun = @arrayfun;
 end
   
-item = arr(fun(func,arr));
-
+mask = fun(func,arr);
 end
 

@@ -800,12 +800,10 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function testCreatesFirstSubplot(testCase)
       testCase.setupFamiliesForNEqualTo1();
-      testCase.act();
-      args = struct;
-      args.nrow = 1;
-      args.ncol = 2;
-      args.pos = 1;
-      testCase.verifyContains(testCase.argsPassedInToSubplot,args,...
+      nrow = 1;
+      ncol = 2;
+      pos = 1;
+      testCase.verifySubplotCalled(nrow,ncol,pos,...
         'Не создана первая область окна');
     end
 

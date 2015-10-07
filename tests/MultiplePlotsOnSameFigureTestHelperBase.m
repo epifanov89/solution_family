@@ -1,5 +1,4 @@
-classdef MultiplePlotsOnSameFigureTestHelperBase < ...
-    matlab.unittest.TestCase & TestHelperBase
+classdef MultiplePlotsOnSameFigureTestHelperBase < TestHelperBase
   
   properties (SetAccess = protected, GetAccess = protected)
     callSequence

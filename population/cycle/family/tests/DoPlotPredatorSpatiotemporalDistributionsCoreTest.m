@@ -316,7 +316,7 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         @(args) isequal(args,argsInfo),...
         testCase.argsPassedInToGetSolutionPart),1)),msg);
     end
-    
+        
     function verifyPlotted(testCase,handle,Y,Z,msg)
       N = 5;
       centerPointIndex = 3;
@@ -357,22 +357,47 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         preLastPointWithExtremeVarValueIndexB);
       pos = 1;
       axesHandle = 1;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      setupAxesHandles();
       pos = 2;
       axesHandle = 2;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      setupAxesHandles();
       pos = 3;
       axesHandle = 3;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      setupAxesHandles();
       pos = 4;
       axesHandle = 4;
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      setupAxesHandles();
       testCase.act();      
       testCase.verifyFalse(isempty(find(arrayfun(@(a)...
         a.handle == handle && a.lims(1) <= 0 && a.lims(2) >= 1 ... 
           && a.lims(3) <= 0 && a.lims(4) >= periodA...
           && a.lims(5) <= ZMin && a.lims(6) >= ZMax,...
         testCase.argsPassedInToAxis),1)),msg);
+      
+      function setupAxesHandles()
+        testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      end
+    end    
+  end
+  
+  methods (Access = protected)
+    function verifySubplotCalled(testCase,pos,msg)
+      N = 5;
+      centerPointIndex = 3;
+      periodA = 30;
+      periodB = 50;
+      lastPointWithExtremeVarValueIndexA = 1;
+      lastPointWithExtremeVarValueIndexB = 2;
+      preLastPointWithExtremeVarValueIndexA = 3;
+      preLastPointWithExtremeVarValueIndexB = 4;
+      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
+        lastPointWithExtremeVarValueIndexA,...
+        lastPointWithExtremeVarValueIndexB,...
+        preLastPointWithExtremeVarValueIndexA,...
+        preLastPointWithExtremeVarValueIndexB);
+      nrow = 2;
+      ncol = 2;
+      verifySubplotCalled@SubplotTestHelper(testCase,nrow,ncol,pos,msg);
     end
     
     function act(testCase)
@@ -529,6 +554,27 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         preLastPointWithExtremeVarValueIndexB,...
         preLastPointWithExtremeVarValueIndexB,...
         'Ќе получено решение B на большем периоде, когда больший период - B');
+    end
+    
+    function testCreatesFirstSubplot(testCase)
+      pos = 1;
+      testCase.verifySubplotCalled(pos,'Ќе создана перва€ область окна');
+    end
+    
+    function testCreatesSecondSubplot(testCase)
+      pos = 2;
+      testCase.verifySubplotCalled(pos,'Ќе создана втора€ область окна');
+    end
+    
+    function testCreatesThirdSubplot(testCase)
+      pos = 3;
+      testCase.verifySubplotCalled(pos,'Ќе создана треть€ область окна');
+    end
+    
+    function testCreatesFourthSubplot(testCase)
+      pos = 4;
+      testCase.verifySubplotCalled(pos,...
+        'Ќе создана четверта€ область окна');
     end
     
     function testPlotsSolutionAFirstPredatorPart(testCase)

@@ -1,4 +1,4 @@
-classdef PlotTestHelperBase < matlab.unittest.TestCase & TestHelperBase
+classdef PlotTestHelperBase < TestHelperBase
   
   properties (SetAccess = protected, GetAccess = protected)
     plottedLines
@@ -25,11 +25,7 @@ classdef PlotTestHelperBase < matlab.unittest.TestCase & TestHelperBase
       testCase.act();
       testCase.verifyContains(testCase.plottedLines,line,msg);
     end
-    
-    function verifyContains(testCase,arr,item,msg)
-      testCase.verifyTrue(contains(arr,item),msg);
-    end
-    
+        
     function fakeClose(testCase,arg)
       testCase.argPassedInToClose = arg;
     end

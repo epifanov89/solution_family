@@ -1,4 +1,4 @@
-classdef SubplotTestHelper < handle
+classdef SubplotTestHelper < TestHelperBase
   
   properties    
     axesHandlesToReturnFromSubplot
@@ -22,7 +22,8 @@ classdef SubplotTestHelper < handle
       args.nrow = nrow;
       args.ncol = ncol;
       args.pos = pos;
-      testCase.argsPassedInToSubplot = args;
+      testCase.argsPassedInToSubplot = ...
+        [testCase.argsPassedInToSubplot,args];
       
       axesHandles = getArrayItems(...
         @(a) a.pos == pos,testCase.axesHandlesToReturnFromSubplot);
@@ -31,6 +32,15 @@ classdef SubplotTestHelper < handle
       else
         h = [];
       end
+    end
+    
+    function verifySubplotCalled(testCase,nrow,ncol,pos,msg)
+      testCase.act();
+      args = struct;
+      args.nrow = nrow;
+      args.ncol = ncol;
+      args.pos = pos;
+      testCase.verifyContains(testCase.argsPassedInToSubplot,args,msg);
     end
   end
   

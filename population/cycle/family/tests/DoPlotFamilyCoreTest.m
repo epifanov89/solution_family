@@ -3,7 +3,11 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     & MultiplePlotsOnSameFigureMultipleFiguresTestHelper
   
   properties
-    namePassedInToDir
+    nfamily
+    nsolpt
+    nStandaloneSol
+    nSolForTrajectoryPlot
+    namesPassedInToDir
     listingsToReturnFromDir    
     argsPassedInToGetLastRowWithExtremeElementValue
     varsToReturnFromGetLastRowWithExtremeElementValue
@@ -17,6 +21,10 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     function setup(testCase)
       setup@LoadFamilyTestHelper(testCase);
       setup@MultiplePlotsOnSameFigureMultipleFiguresTestHelper(testCase);
+      testCase.nfamily = 2;
+      testCase.nsolpt = 10;
+      testCase.nStandaloneSol = 2;
+      testCase.nSolForTrajectoryPlot = 2;
       testCase.dirname = 'dir\';
       testCase.solutionPartsForTrajectoryPlot = {};
       testCase.getSolutionPartForTrajectoryPlotCallNo = 1;
@@ -52,19 +60,29 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function setupFamilyOf2Solutions(testCase,familyNo,...
         firstPredatorMortality,nvar)
-      files = testCase.setupFamilySolutions(firstPredatorMortality,...
-        familyNo,nvar);
+      nsol = 2;
+      solsToPlotVarValOffset = ...
+        testCase.nfamily*(nsol+testCase.nStandaloneSol)-1;
       
-      nsol = 2;      
+      files = testCase.setupFamilySolutions(firstPredatorMortality,...
+        familyNo,nvar,solsToPlotVarValOffset);
+        
       testCase.setupStandaloneSolutionsAndDirListing(files,...
-        firstPredatorMortality,familyNo,nsol,nvar);
+        firstPredatorMortality,familyNo,nsol,nvar,solsToPlotVarValOffset);
     end
     
     function files = setupFamilySolutions(testCase,...
-        firstPredatorMortality,familyNo,nvar)
+        firstPredatorMortality,familyNo,nvar,solsToPlotVarValOffset)
       nsol = 2;
-      files = testCase.setupFamilyFirstSolution(firstPredatorMortality,...
-        familyNo,nsol,nvar);
+      files = [];
+      
+      solNo = 0;    
+      filename = '0.mat';
+      filepath = sprintf(...
+        'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\0.mat',...
+        firstPredatorMortality);
+      files = testCase.setupSolution(files,filename,filepath,familyNo,...
+        nsol,solNo,nvar,solsToPlotVarValOffset);
       
       solNo = 1;
       filename = '1.mat';
@@ -72,25 +90,14 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\1.mat',...
         firstPredatorMortality);
       files = testCase.setupSolution(files,filename,filepath,familyNo,...
-        nsol,solNo,nvar);
-    end
-        
-    function files = setupFamilyFirstSolution(testCase,...
-        firstPredatorMortality,familyNo,nsol,nvar)
-      files = [];
-      solNo = 0;    
-      filename = '0.mat';
-      filepath = sprintf(...
-        'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\0.mat',...
-        firstPredatorMortality);
-      files = testCase.setupSolution(files,filename,filepath,familyNo,...
-        nsol,solNo,nvar);
+        nsol,solNo,nvar,solsToPlotVarValOffset);
     end
     
     function setupStandaloneSolutionsAndDirListing(testCase,...
-        files,firstPredatorMortality,familyNo,nsol,nvar)
+        files,firstPredatorMortality,familyNo,nsol,nvar,...
+        solsToPlotVarValOffset)
       testCase.setupStandaloneSolutions(firstPredatorMortality,familyNo,...
-        nsol,nvar);
+        nsol,nvar,solsToPlotVarValOffset);
       
       testCase.setupDirListing(firstPredatorMortality,files);
     end
@@ -106,35 +113,37 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     end
     
     function listing = setupSolution(testCase,listing,filename,filepath,...
-        familyNo,nsol,solNo,nvar)
+        familyNo,nsol,solNo,nvar,solsToPlotVarValOffset)
       file = struct; 
       file.name = filename;
       file.isdir = false;
       
       listing = [listing,file];
 
+      nSolPartForTrajectoryPlotRow = 2;
+      rowIndexOffset = nsol*(familyNo-1)+solNo;
+      solOffset = rowIndexOffset+testCase.nStandaloneSol*(familyNo-1);
+      
       varsToLoad = struct;
       varsToLoad.filename = filepath;
       vars = struct;
       npt = 10;
-      w(1:npt,1:nvar) = solNo;
+      w(1:npt,1:nvar) = solOffset;      
       vars.w = w;
       varsToLoad.vars = vars;
       testCase.varsToLoad = [testCase.varsToLoad,varsToLoad];
 
       vars = struct;
-      vars.sol = w;
-      solOffset = nsol*(familyNo-1)+solNo;
-      vars.row = nvar*solOffset+1:nvar*(solOffset+1);
-      vars.rowIndex = -solOffset;
+      vars.sol = w;      
+      varValOffset = ...
+        solsToPlotVarValOffset+nvar*(solOffset+testCase.nSolForTrajectoryPlot*nSolPartForTrajectoryPlotRow*(familyNo-1));
+      vars.row = varValOffset:varValOffset+nvar-1;
+      vars.rowIndex = -rowIndexOffset;
       testCase.varsToReturnFromGetLastRowWithExtremeElementValue = ...
         [testCase.varsToReturnFromGetLastRowWithExtremeElementValue,vars];
     end
 
     function setupStandaloneSolutionsForNEqualTo1(testCase)
-      nsol = 0;
-      nvar = 3;
-      
       firstPredatorMortality = 1.1;
       familyNo = 1;
       setupFamilyStandaloneSolutions();
@@ -143,35 +152,41 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       setupFamilyStandaloneSolutions();
       
       function setupFamilyStandaloneSolutions()
+        nsol = 0;
+        nvar = 3;
+        solsToPlotVarValOffset = 0;
         testCase.setupStandaloneSolutions(firstPredatorMortality,...
-          familyNo,nsol,nvar);
+          familyNo,nsol,nvar,solsToPlotVarValOffset);
       end
     end
 
     function setupStandaloneSolutions(testCase,firstPredatorMortality,...
-        familyNo,nsol,nvar)      
-      standaloneSolutionsOffset = nsol*familyNo;
+        familyNo,nsol,nvar,solsToPlotVarValOffset)   
+      standaloneSolutionsOffset = ...
+        nsol*familyNo+testCase.nStandaloneSol*(familyNo-1);
+      nSolPartForTrajectoryPlotRow = 2;
+      standaloneSolsToPlotVarValOffset = ...
+        solsToPlotVarValOffset+(testCase.nSolForTrajectoryPlot*nSolPartForTrajectoryPlotRow*(familyNo-1)+standaloneSolutionsOffset)*nvar;
       
-      sol = nsol;
+      sol = standaloneSolutionsOffset;
       setupZeroOnePredatorSolution(sprintf(...
           'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\zeroFirstPredator.mat',...
           firstPredatorMortality),sol,...
-        nvar*standaloneSolutionsOffset+1:nvar*(standaloneSolutionsOffset+1));
-      sol = nsol+1;
-      setupZeroOnePredatorSolution(...
-        sprintf(...
+        standaloneSolsToPlotVarValOffset:standaloneSolsToPlotVarValOffset+nvar-1);
+      sol = standaloneSolutionsOffset+1;
+      setupZeroOnePredatorSolution(sprintf(...
           'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\zeroSecondPredator.mat',...
           firstPredatorMortality),sol,...
-        nvar*(standaloneSolutionsOffset+1)+1:nvar*(standaloneSolutionsOffset+2));     
+        standaloneSolsToPlotVarValOffset+nvar:standaloneSolsToPlotVarValOffset+2*nvar-1);     
       
       firstSolutionPartForTrajectoryPlot(1,:) = ...
-        nvar*(standaloneSolutionsOffset+2)+1:nvar*(standaloneSolutionsOffset+3);
+        standaloneSolsToPlotVarValOffset+2*nvar:standaloneSolsToPlotVarValOffset+3*nvar-1;
       firstSolutionPartForTrajectoryPlot(2,:) = ...
-        nvar*(standaloneSolutionsOffset+3)+1:nvar*(standaloneSolutionsOffset+4);
+        standaloneSolsToPlotVarValOffset+3*nvar:standaloneSolsToPlotVarValOffset+4*nvar-1;
       secondSolutionPartForTrajectoryPlot(1,:) = ...
-        nvar*(standaloneSolutionsOffset+4)+1:nvar*(standaloneSolutionsOffset+5);
+        standaloneSolsToPlotVarValOffset+4*nvar:standaloneSolsToPlotVarValOffset+5*nvar-1;
       secondSolutionPartForTrajectoryPlot(2,:) = ...
-        nvar*(standaloneSolutionsOffset+5)+1:nvar*(standaloneSolutionsOffset+6);
+        standaloneSolsToPlotVarValOffset+5*nvar:standaloneSolsToPlotVarValOffset+6*nvar-1;
       
       testCase.solutionPartsForTrajectoryPlot = ...
         [testCase.solutionPartsForTrajectoryPlot,...
@@ -196,6 +211,16 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         testCase.varsToReturnFromGetLastRowWithExtremeElementValue = ...
           [testCase.varsToReturnFromGetLastRowWithExtremeElementValue,vars];
       end      
+    end
+    
+    function verifyGotDirListing(testCase,firstPredatorMortality,msg)
+      testCase.dirname = 'dir\';
+      testCase.namesPassedInToDir = {};
+      testCase.setupFamiliesForNEqualTo1();
+      testCase.act();
+      testCase.verifyContains(testCase.namesPassedInToDir,...
+        sprintf('dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\*.mat',...
+          firstPredatorMortality),msg);
     end
     
     function verifyErrorIfThereAreNoFilesToLoadFrom(testCase,file)
@@ -229,6 +254,65 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         'plotFamily:AllFilesMustExist',msg);
     end
     
+    function verifyDidNotLoadFromForeignFiles(testCase,...
+        familyInQuestionNo,familyInQuestionFirstPredatorMortality,...
+        otherFamilyNo,otherFamilyFirstPredatorMortality,msg)
+      nvar = 3;
+      solsToPlotVarValOffset = 0;
+      files = testCase.setupFamilySolutions(...
+        familyInQuestionFirstPredatorMortality,familyInQuestionNo,nvar,...
+        solsToPlotVarValOffset);
+      
+      nsol = 2;         
+      testCase.setupStandaloneSolutions(...
+        familyInQuestionFirstPredatorMortality,familyInQuestionNo,...
+        nsol,nvar,solsToPlotVarValOffset);
+      
+      foreignFile = struct;
+      foreignFile.name = 'foreign_file.mat';
+      foreignFile.isdir = false;      
+      files = [files,foreignFile];
+      
+      testCase.setupDirListing(familyInQuestionFirstPredatorMortality,...
+        files);
+      
+      testCase.setupFamilyOf2Solutions(otherFamilyNo,...
+        otherFamilyFirstPredatorMortality,nvar);
+      
+      testCase.act();
+      testCase.verifyFalse(contains(testCase.filenamesPassedInToLoad,...
+          sprintf('dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\foreign_file.mat',...
+            familyInQuestionFirstPredatorMortality)),msg);
+    end
+    
+    function verifyGotSolution0LastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        testCase,solVarsVal,msgStart)
+      colIndex = 3;
+      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        solVarsVal,colIndex,msgStart);
+    end
+    
+    function verifyGotSolution0LastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        testCase,solVarsVal,msgStart)
+      colIndex = 6;
+      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        solVarsVal,colIndex,msgStart);
+    end
+    
+    function verifyGotSolution1LastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        testCase,solVarsVal,msgStart)
+      colIndex = 2;
+      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        solVarsVal,colIndex,msgStart);
+    end
+        
+    function verifyGotSolution1LastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        testCase,solVarsVal,msgStart)
+      colIndex = 4;
+      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        solVarsVal,colIndex,msgStart);
+    end
+    
     function verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo1(...
         testCase,solVarsVal,colIndex,msgStart)
       N = 1;
@@ -252,15 +336,12 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       testCase.act();
       
       args = struct;
-      npt = 10;
-      sol(1:npt,1:nvar) = solVarsVal;
-      args.solution = sol;
+      args.solution(1:testCase.nsolpt,1:nvar) = solVarsVal;
       args.colIndex = colIndex;
-      args.extremeVarValue = 'max';
+      args.extremeValueKind = 'max';
       msg = testCase.getMsg(msgStart,N);
-      testCase.verifyFalse(contains(...
-        testCase.argsPassedInToGetLastRowWithExtremeElementValue,args),...
-        msg);
+      testCase.verifyContains(...
+        testCase.argsPassedInToGetLastRowWithExtremeElementValue,args,msg);
     end
     
     function verifyGotSolutionPartForTrajectoryPlot(testCase,solVarsVal,...
@@ -289,8 +370,18 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         testCase.argsPassedInToGetSolutionPartForTrajectoryPlot,args,msg);
       
       function setupFamilySolutions()
-        files = testCase.setupFamilyFirstSolution(...
-          familyFirstPredatorMortality,familyNo,nsol,nvar);
+        files = [];
+        
+        nsol = 11;
+        solsToPlotVarValOffset = testCase.nfamily*(nsol+testCase.nStandaloneSol)-1;
+        
+        filename = '0.mat';
+        filepath = ...
+          sprintf(...
+            'dir\\solution_results\\families\\p=1+0.5sin(2 pi x)\\l2=%.1f\\0.mat',...
+            familyFirstPredatorMortality);
+        solNo = 0;              
+        setupSolution();
 
         filename = '10.mat';
         filepath = ...
@@ -371,16 +462,44 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
             familyFirstPredatorMortality);
         solNo = 9;  
         setupSolution();
-        
-        nsol = 11;
+                
         testCase.setupStandaloneSolutionsAndDirListing(files,...
-          familyFirstPredatorMortality,familyNo,nsol,nvar);
+          familyFirstPredatorMortality,familyNo,nsol,nvar,...
+          solsToPlotVarValOffset);
         
         function setupSolution()
           files = testCase.setupSolution(files,filename,filepath,...
-            familyNo,nsol,solNo,nvar);
+            familyNo,nsol,solNo,nvar,solsToPlotVarValOffset);
         end
       end
+    end
+    
+    function verifyGotMaxSecondPredatorDensityForNEqualTo1(testCase,sol,...
+        msgStart)
+      colIndex = 3;
+      testCase.verifyGotMaxPredatorDensityForNEqualTo1(sol,colIndex,...
+        msgStart);
+    end
+    
+    function verifyGotMaxSecondPredatorDensityForNEqualTo2(testCase,sol,...
+        msgStart)
+      colIndex = 6;
+      testCase.verifyGotMaxPredatorDensityForNEqualTo2(sol,colIndex,...
+        msgStart);
+    end
+    
+    function verifyGotMaxFirstPredatorDensityForNEqualTo1(testCase,sol,...
+        msgStart)
+      colIndex = 2;
+      testCase.verifyGotMaxPredatorDensityForNEqualTo1(sol,colIndex,...
+        msgStart);
+    end
+    
+    function verifyGotMaxFirstPredatorDensityForNEqualTo2(testCase,sol,...
+        msgStart)
+      colIndex = 4;
+      testCase.verifyGotMaxPredatorDensityForNEqualTo2(sol,colIndex,...
+        msgStart);
     end
     
     function verifyGotMaxPredatorDensityForNEqualTo1(testCase,sol,...
@@ -415,7 +534,13 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     
     function verifyPlottedOnFirstSubplot(~,verifyFun)
       pos = 1;
-      handle = 25;
+      handle = 55;
+      verifyFun(pos,handle);
+    end
+    
+    function verifyPlottedOnSecondSubplot(~,verifyFun)
+      pos = 2;
+      handle = 56;
       verifyFun(pos,handle);
     end
     
@@ -451,8 +576,44 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       str = sprintf('%s при N = %d',msgStart,N);
     end
     
+    function verifyDidNotOverwritePlots(testCase,pos,handle,msg)
+      testCase.setupFamiliesForNEqualTo1();
+      testCase.setupSubplot(pos,handle);
+      testCase.act(); 
+      
+      callInfo = struct;
+      callInfo.fcn = 'hold';
+      args = struct;
+      args.handle = handle;
+      args.arg = 'on';
+      callInfo.args = args;
+      holdOnCallIndices = getArrayItemIndices(...
+        callInfo,testCase.callSequence);
+      testCase.assertFalse(isempty(holdOnCallIndices),msg);
+      
+      callInfo.fcn = 'plot';
+      args = struct;
+      args.handle = handle;
+      callInfo.args = args;
+      plotCallIndices = getArrayItemIndices(...
+        callInfo,testCase.callSequence);
+      plotBeforeHoldOnIndices = find(plotCallIndices < holdOnCallIndices(1));
+      testCase.assertLessThanOrEqual(length(plotBeforeHoldOnIndices),1,...
+        msg);
+      
+      callInfo.fcn = 'hold';
+      args = struct;
+      args.arg = 'off';
+      callInfo.args = args;
+      holdOffCallIndices = getArrayItemIndices(...
+        callInfo,testCase.callSequence);
+      holdOffBeforeLastPlotCallIndices = find(...
+        holdOffCallIndices < plotCallIndices(end),1);
+      testCase.verifyTrue(isempty(holdOffBeforeLastPlotCallIndices),msg);
+    end
+    
     function files = fakeDir(testCase,name)
-      testCase.namePassedInToDir = name;      
+      testCase.namesPassedInToDir = [testCase.namesPassedInToDir,name];      
       listing = getArrayItems(@(l) strcmp(l.name,name),...
         testCase.listingsToReturnFromDir);
       files = listing.files;
@@ -499,6 +660,13 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
   end 
    
   methods (Access = protected)
+    function verifySubplotCalled(testCase,pos,msg)
+      testCase.setupFamiliesForNEqualTo1();
+      nrow = 1;
+      ncol = 2;
+      verifySubplotCalled@SubplotTestHelper(testCase,nrow,ncol,pos,msg);
+    end
+    
     function verifyLinePlotted(testCase,pos,handle,N,line,msgStart)
       testCase.setupSubplot(pos,handle);
       msg = testCase.getMsg(msgStart,N);
@@ -555,13 +723,16 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       testCase.verifyGotFileDirname();
     end
     
-    function testGetsDirListing(testCase)
-      testCase.dirname = 'dir\';
-      testCase.setupFamiliesForNEqualTo1();
-      testCase.act();
-      testCase.verifyEqual(testCase.namePassedInToDir,...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\*.mat',...
-        'Не получены имена файлов с решениями семейства');
+    function testGetsFamily1DirListing(testCase)
+      firstPredatorMortality = 1.1;
+      testCase.verifyGotDirListing(firstPredatorMortality,...
+        'Не получены имена файлов с решениями первого семейства');
+    end
+    
+    function testGetsFamily2DirListing(testCase)
+      firstPredatorMortality = 1.2;
+      testCase.verifyGotDirListing(firstPredatorMortality,...
+        'Не получены имена файлов с решениями второго семейства');
     end
     
     function testThrowsExceptionIfThereAreOnlyFolders(testCase)
@@ -606,12 +777,13 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       firstPredatorMortality = 1.1;
       familyNo = 1;      
       nvar = 3;
+      solsToPlotVarValOffset = 0;
       files = testCase.setupFamilySolutions(firstPredatorMortality,...
-        familyNo,nvar);
+        familyNo,nvar,solsToPlotVarValOffset);
       
       nsol = 2;  
       testCase.setupStandaloneSolutions(firstPredatorMortality,familyNo,...
-        nsol,nvar);
+        nsol,nvar,solsToPlotVarValOffset);
       
       folder = struct;
       folder.name = '2.mat';
@@ -620,6 +792,12 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
 
       testCase.setupDirListing(firstPredatorMortality,files);
       
+      firstPredatorMortality = 1.2;
+      familyNo = 2; 
+      
+      testCase.setupFamilyOf2Solutions(familyNo,firstPredatorMortality,...
+        nvar);
+      
       testCase.act();      
       testCase.verifyFalse(contains(...
           testCase.filenamesPassedInToLoad,...
@@ -627,60 +805,82 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         'Попытка загрузить решение из папки');
     end
     
-    function testDoesNotLoadFromForeignFiles(testCase)      
-      firstPredatorMortality = 1.1;
-      familyNo = 1;         
-      nvar = 3;
-      files = testCase.setupFamilySolutions(firstPredatorMortality,...
-        familyNo,nvar);
-      
-      nsol = 2;         
-      testCase.setupStandaloneSolutions(firstPredatorMortality,...
-        familyNo,nsol,nvar);
-      
-      foreignFile = struct;
-      foreignFile.name = 'foreign_file.mat';
-      foreignFile.isdir = false;      
-      files = [files,foreignFile];
-      
-      testCase.setupDirListing(firstPredatorMortality,files);
-      
-      testCase.act();
-      testCase.verifyFalse(contains(testCase.filenamesPassedInToLoad,...
-          'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\foreign_file.mat'),...
-        'Загружены данные из неправильного файла');
+    function testDoesNotLoadFromForeignFilesOfFirstFamilyFolder(testCase)     
+      familyInQuestionNo = 1;         
+      familyInQuestionFirstPredatorMortality = 1.1;
+      otherFamilyNo = 2;         
+      otherFamilyFirstPredatorMortality = 1.2;
+      testCase.verifyDidNotLoadFromForeignFiles(familyInQuestionNo,...
+        familyInQuestionFirstPredatorMortality,otherFamilyNo,...
+        otherFamilyFirstPredatorMortality,...
+        'Загружены данные из неправильного файла папки первого семейства');
     end
     
-    function testGetsSolution0LastPointWithMaxPredatorDensitiesForNEqualTo1(testCase)
+    function testDoesNotLoadFromForeignFilesOfSecondFamilyFolder(testCase)     
+      familyInQuestionNo = 2;         
+      familyInQuestionFirstPredatorMortality = 1.2;
+      otherFamilyNo = 1;         
+      otherFamilyFirstPredatorMortality = 1.1;
+      testCase.verifyDidNotLoadFromForeignFiles(familyInQuestionNo,...
+        familyInQuestionFirstPredatorMortality,otherFamilyNo,...
+        otherFamilyFirstPredatorMortality,...
+        'Загружены данные из неправильного файла папки второго семейства');
+    end
+    
+    function testGetsForNEqualTo1Family1Solution0LastPointWithMaxPredatorDensities(testCase)
       solVarsVal = 0;
-      colIndex = 3;
-      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo1(...
-        solVarsVal,colIndex,...
-        'Не получена последняя точка первого решения с максимальными плотностями популяций хищников в центральной точке ареала');
+      testCase.verifyGotSolution0LastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        solVarsVal,...
+        'Не получена последняя точка первого решения первого семейства с максимумом хищников');
     end
     
-    function testGetsSolution0LastPointWithMaxPredatorDensitiesForNEqualTo2(testCase)       
+    function testGetsForNEqualTo2Family1Solution0LastPointWithMaxPredatorDensities(testCase)       
       solVarsVal = 0;
-      colIndex = 6;
-      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo2(...
-        solVarsVal,colIndex,...
-        'Не получена последняя точка первого решения с максимальными плотностями популяций хищников в центральной точке ареала');
+      testCase.verifyGotSolution0LastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        solVarsVal,...
+        'Не получена последняя точка первого решения первого семейства с максимумом хищников');
     end
     
-    function testGetsSolution1LastPointWithMaxPredatorDensitiesForNEqualTo1(testCase)      
+    function testGetsForNEqualTo1Family1Solution1LastPointWithMaxPredatorDensities(testCase)      
       solVarsVal = 1;
-      colIndex = 2;
-      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo1(...
-        solVarsVal,colIndex,...
-        'Не получена последняя точка второго решения с максимальными плотностями популяций хищников в центральной точке ареала');
+      testCase.verifyGotSolution1LastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        solVarsVal,...
+        'Не получена последняя точка второго решения первого семейства с максимумом хищников');
     end
     
-    function testGetsSolution1LastPointWithMaxPredatorDensitiesForNEqualTo2(testCase)
+    function testGetsForNEqualTo2Family1Solution1LastPointWithMaxPredatorDensities(testCase)
       solVarsVal = 1;
-      colIndex = 4;
-      testCase.verifyGotSolutionLastPointWithMaxPredatorDensitiesForNEqualTo2(...
-        solVarsVal,colIndex,...
-        'Не получена последняя точка второго решения с максимальными плотностями популяций хищников в центральной точке ареала');
+      testCase.verifyGotSolution1LastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        solVarsVal,...
+        'Не получена последняя точка второго решения первого семейства с максимумом хищников');
+    end
+    
+    function testGetsForNEqualTo1Family2Solution0LastPointWithMaxPredatorDensities(testCase)
+      solVarsVal = 4;
+      testCase.verifyGotSolution0LastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        solVarsVal,...
+        'Не получена последняя точка первого решения второго семейства с максимумом хищников');
+    end
+    
+    function testGetsForNEqualTo2Family2Solution0LastPointWithMaxPredatorDensities(testCase)
+      solVarsVal = 4;
+      testCase.verifyGotSolution0LastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        solVarsVal,...
+        'Не получена последняя точка первого решения второго семейства с максимумом хищников');
+    end
+    
+    function testGetsForNEqualTo1Family2Solution1LastPointWithMaxPredatorDensities(testCase)
+      solVarsVal = 5;
+      testCase.verifyGotSolution1LastPointWithMaxPredatorDensitiesForNEqualTo1(...
+        solVarsVal,...
+        'Не получена последняя точка второго решения второго семейства с максимумом хищников');
+    end
+    
+    function testGetsForNEqualTo2Family2Solution1LastPointWithMaxPredatorDensities(testCase)
+      solVarsVal = 5;
+      testCase.verifyGotSolution1LastPointWithMaxPredatorDensitiesForNEqualTo2(...
+        solVarsVal,...
+        'Не получена последняя точка второго решения второго семейства с максимумом хищников');
     end
     
     function testThrowsExceptionForInconsistentGrids(testCase)
@@ -740,197 +940,275 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
         'Не выброшено исключение, несмотря на то что для разных решений семейства разные сетки');
     end
     
-    function testGetsPartOfFamilySecondSolutionForTrajectoryPlot(testCase)
+    function testGetsPartOfFamily1SecondSolutionForTrajectoryPlot(testCase)
       solVarsVal = 1;
       pointIndex = -1;
       testCase.verifyGotSolutionPartForTrajectoryPlot(solVarsVal,...
         pointIndex,...
-        'Не получена часть первого решения для вывода траектории');
+        'Не получена часть первого решения первого семейства для вывода траектории');
     end
     
-    function testGetsPartOfFamilySolutionBeforeLastForTrajectoryPlot(testCase)      
+    function testGetsPartOfFamily1SolutionBeforeLastForTrajectoryPlot(...
+        testCase)      
       solVarsVal = 9;
       pointIndex = -9;
       testCase.verifyGotSolutionPartForTrajectoryPlot(solVarsVal,...
         pointIndex,...
-        'Не получена часть второго решения для вывода траектории');
+        'Не получена часть второго решения первого семейства для вывода траектории');
     end
     
-    function testGetsMaxSecondPredatorDensityForNEqualTo1(testCase)      
+    function testGetsPartOfFamily2SolutionBeforeLastForTrajectoryPlot(testCase)
+      solVarsVal = 22;
+      pointIndex = -20;
+      testCase.verifyGotSolutionPartForTrajectoryPlot(solVarsVal,...
+        pointIndex,...
+        'Не получена часть второго решения второго семейства для вывода траектории');
+    end
+    
+    function testGetsFamily1MaxSecondPredatorDensityForNEqualTo1(testCase)
       sol = 2;
-      colIndex = 3;
-      testCase.verifyGotMaxPredatorDensityForNEqualTo1(sol,colIndex,...
-        'Для решения с нулевой первой популяцией хищников не получены максимальные плотности второй популяции хищников в центральной точке ареала');
+      testCase.verifyGotMaxSecondPredatorDensityForNEqualTo1(sol,...
+        'Для решения первого семейства с нулевым первым хищником не получен максимум второго хищника');
     end
     
-    function testGetsMaxSecondPredatorDensityForNEqualTo2(testCase)      
+    function testGetsFamily1MaxSecondPredatorDensityForNEqualTo2(testCase)      
       sol = 2;
-      colIndex = 6;
-      testCase.verifyGotMaxPredatorDensityForNEqualTo2(sol,colIndex,...
-        'Для решения с нулевой первой популяцией хищников не получены максимальные плотности второй популяции хищников в центральной точке ареала');
+      testCase.verifyGotMaxSecondPredatorDensityForNEqualTo2(sol,...
+        'Для решения первого семейства с нулевым первым хищником не получен максимум второго хищника');
     end
     
-    function testGetsMaxFirstPredatorDensityForNEqualTo1(testCase)
+    function testGetsFamily1MaxFirstPredatorDensityForNEqualTo1(testCase)
       sol = 3;
-      colIndex = 2;
-      testCase.verifyGotMaxPredatorDensityForNEqualTo1(sol,colIndex,...
-        'Для решения с нулевой второй популяцией хищников не получены максимальные плотности первой популяции хищников в центральной точке ареала');
+      testCase.verifyGotMaxFirstPredatorDensityForNEqualTo1(sol,...
+        'Для решения первого семейства с нулевым вторым хищником не получен максимум первого хищника');
     end
     
-    function testGetsMaxFirstPredatorDensityForNEqualTo2(testCase)      
+    function testGetsFamily1MaxFirstPredatorDensityForNEqualTo2(testCase)      
       sol = 3;
-      colIndex = 4;
-      testCase.verifyGotMaxPredatorDensityForNEqualTo2(sol,colIndex,...
-        'Для решения с нулевой второй популяцией хищников не получены максимальные плотности первой популяции хищников в центральной точке ареала');
+      testCase.verifyGotMaxFirstPredatorDensityForNEqualTo2(sol,...
+        'Для решения первого семейства с нулевым вторым хищником не получен максимум первого хищника');
     end
     
-%     function testPlotsAllOnSameNewlyCreatedFigure(testCase)
-%       testCase.setupFamiliesForNEqualTo1();
-%       testCase.act();
-%       figureCallIndices = find(arrayfun(@(call) strcmp(call.fcn,'figure'),...
-%         testCase.callSequence));
-%       plotCallIndices = find(arrayfun(@(call) strcmp(call.fcn,'plot'),...
-%         testCase.callSequence));
-%       testCase.assertFalse(isempty(figureCallIndices),...
-%         'Не создано новое окно рисунка');
-%       testCase.verifyTrue(isempty(find(...
-%         plotCallIndices < figureCallIndices,1)),...
-%         'Не все графики выведены на одном рисунке');
-%     end
+    function testGetsFamily2MaxSecondPredatorDensityForNEqualTo1(testCase)
+      sol = 6;
+      testCase.verifyGotMaxSecondPredatorDensityForNEqualTo1(sol,...
+        'Для решения второго семейства с нулевым первым хищником не получен максимум второго хищника');
+    end
+    
+    function testGetsFamily2MaxSecondPredatorDensityForNEqualTo2(testCase)
+      sol = 6;
+      testCase.verifyGotMaxSecondPredatorDensityForNEqualTo2(sol,...
+        'Для решения второго семейства с нулевым первым хищником не получен максимум второго хищника');
+    end
+    
+    function testGetsFamily2MaxFirstPredatorDensityForNEqualTo1(testCase)
+      sol = 7;
+      testCase.verifyGotMaxFirstPredatorDensityForNEqualTo1(sol,...
+        'Для решения второго семейства с нулевым вторым хищником не получен максимум первого хищника');
+    end
+    
+    function testGetsFamily2MaxFirstPredatorDensityForNEqualTo2(testCase)
+      sol = 7;
+      testCase.verifyGotMaxFirstPredatorDensityForNEqualTo2(sol,...
+        'Для решения второго семейства с нулевым вторым хищником не получен максимум первого хищника');
+    end
     
     function testCreatesFirstSubplot(testCase)
-      testCase.setupFamiliesForNEqualTo1();
-      nrow = 1;
-      ncol = 2;
       pos = 1;
-      testCase.verifySubplotCalled(nrow,ncol,pos,...
-        'Не создана первая область окна');
+      testCase.verifySubplotCalled(pos,'Не создана первая область окна');
+    end
+    
+    function testCreatesSecondSubplot(testCase)
+      pos = 2;
+      testCase.verifySubplotCalled(pos,'Не создана вторая область окна');
     end
 
-    function testPlotsFamilyMaxPredatorDensitiesForNEqualTo1(testCase)
-      expLine = [2 3
-                 5 6];
+    function testPlotsFamily1MaxPredatorDensitiesForNEqualTo1(testCase)
+      expLine = [ 8  9
+                 11 12];
       testCase.verifyPlottedOnFirstSubplot(...
         @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
           handle,expLine,...
-          'Не выведены максимумы хищников в центральной точке ареала для решений семейства'));
+          'Не выведены максимумы хищников для решений первого семейства'));
     end
     
-    function testPlotsFamilyMaxPredatorDensitiesForNEqualTo2(testCase)      
-      expLine = [ 4  6
-                 10 12];
+    function testPlotsFamily1MaxPredatorDensitiesForNEqualTo2(testCase)      
+      expLine = [10 12
+                 16 18];
       testCase.verifyPlottedOnFirstSubplot(...
         @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
           handle,expLine,...
-          'Не выведены максимумы хищников в центральной точке ареала для решений семейства'));
+          'Не выведены максимумы хищников для решений первого семейства'));
     end
     
-    function testPlotsMaxSecondPredatorForZeroFirstPredatorForNEqualTo1(testCase)
-      expPoint = [8 9];      
+    function testPlotsFamily2MaxPredatorDensitiesForNEqualTo1(testCase)
+      expLine = [32 33
+                 35 36];
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
+          handle,expLine,...
+          'Не выведены максимумы хищников для решений второго семейства'));
+    end
+    
+    function testPlotsFamily2MaxPredatorDensitiesForNEqualTo2(testCase)
+      expLine = [58 60
+                 64 66];
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
+          handle,expLine,...
+          'Не выведены максимумы хищников для решений второго семейства'));
+    end
+    
+    function testPlotsForNEqualTo1Family1MaxSecondPredatorForZeroFirstPredator(testCase)
+      expPoint = [14 15];      
       testCase.verifyPlottedOnFirstSubplot(...
         @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
           handle,expPoint,...
-          'Не выведена максимальная плотность второй популяции хищников в центральной точке ареала'));
+          'Не выведена максимальная плотность второго хищника для первого семейства'));
     end
     
-    function testPlotsMaxSecondPredatorForZeroFirstPredatorForNEqualTo2(testCase)
-      expPoint = [16 18];
-      testCase.verifyPlottedOnFirstSubplot(...
-        @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
-          handle,expPoint,...
-          'Не выведена максимальная плотность второй популяции хищников в центральной точке ареала'));
-    end
-    
-    function testPlotsMaxFirstPredatorForZeroSecondPredatorForNEqualTo1(testCase)
-      expPoint = [11 12];
-      testCase.verifyPlottedOnFirstSubplot(...
-        @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
-          handle,expPoint,...
-          'Не выведена максимальная плотность первой популяции хищников в центральной точке ареала'));
-    end
-    
-    function testPlotsMaxFirstPredatorForZeroSecondPredatorForNEqualTo2(testCase)
+    function testPlotsForNEqualTo2Family1MaxSecondPredatorForZeroFirstPredator(testCase)
       expPoint = [22 24];
       testCase.verifyPlottedOnFirstSubplot(...
         @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
           handle,expPoint,...
-          'Не выведена максимальная плотность первой популяции хищников в центральной точке ареала'));
+          'Не выведена максимальная плотность второго хищника для первого семейства'));
     end
     
-    function testPlotsFirstSolutionTrajectoryForNEqualTo1(testCase)
-      expLine = [14 15
-                 17 18];
+    function testPlotsForNEqualTo1Family1MaxFirstPredatorForZeroSecondPredator(testCase)
+      expPoint = [17 18];
       testCase.verifyPlottedOnFirstSubplot(...
-        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
-          handle,expLine,...
-          'Не выведена первая траектория установления хищников в центральной точке ареала'));
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность первого хищника для первого семейства'));
     end
     
-    function testPlotsFirstSolutionTrajectoryForNEqualTo2(testCase)
-      expLine = [28 30
-                 34 36];
+    function testPlotsForNEqualTo2Family1MaxFirstPredatorForZeroSecondPredator(testCase)
+      expPoint = [28 30];
       testCase.verifyPlottedOnFirstSubplot(...
-        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
-          handle,expLine,...
-          'Не выведена первая траектория установления хищников в центральной точке ареала'));
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность первого хищника для первого семейства'));
     end
     
-    function testPlotsSecondSolutionTrajectoryForNEqualTo1(testCase)
+    function testPlotsForNEqualTo1Family2MaxSecondPredatorForZeroFirstPredator(testCase)
+      expPoint = [38 39];      
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность второго хищника для второго семейства'));
+    end
+    
+    function testPlotsForNEqualTo2Family2MaxSecondPredatorForZeroFirstPredator(testCase)
+      expPoint = [70 72];      
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность второго хищника для второго семейства'));
+    end
+    
+    function testPlotsForNEqualTo1Family2MaxFirstPredatorForZeroSecondPredator(testCase)
+      expPoint = [41 42];      
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность первого хищника для второго семейства'));
+    end
+    
+    function testPlotsForNEqualTo2Family2MaxFirstPredatorForZeroSecondPredator(testCase)
+      expPoint = [76 78];      
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
+          handle,expPoint,...
+          'Не выведена максимальная плотность первого хищника для второго семейства'));
+    end
+    
+    function testPlotsFamily1FirstSolutionTrajectoryForNEqualTo1(testCase)
       expLine = [20 21
                  23 24];
       testCase.verifyPlottedOnFirstSubplot(...
         @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
           handle,expLine,...
-          'Не выведена вторая траектория установления хищников в центральной точке ареала'));
+          'Не выведена первая траектория установления хищников для первого семейства'));
     end
     
-    function testPlotsSecondSolutionTrajectoryForNEqualTo2(testCase)
-      expLine = [40 42
-                 46 48];
+    function testPlotsFamily1FirstSolutionTrajectoryForNEqualTo2(testCase)
+      expLine = [34 36
+                 40 42];
       testCase.verifyPlottedOnFirstSubplot(...
         @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
           handle,expLine,...
-          'Не выведена вторая траектория установления хищников в центральной точке ареала'));
+          'Не выведена первая траектория установления хищников для первого семейства'));
     end
     
-    function testDoesNotOverwritePlots(testCase)
+    function testPlotsFamily1SecondSolutionTrajectoryForNEqualTo1(testCase)
+      expLine = [26 27
+                 29 30];
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
+          handle,expLine,...
+          'Не выведена вторая траектория установления хищников для первого семейства'));
+    end
+    
+    function testPlotsFamily1SecondSolutionTrajectoryForNEqualTo2(testCase)
+      expLine = [46 48
+                 52 54];
+      testCase.verifyPlottedOnFirstSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
+          handle,expLine,...
+          'Не выведена вторая траектория установления хищников для первого семейства'));
+    end
+    
+    function testPlotsFamily2FirstSolutionTrajectoryForNEqualTo1(testCase)
+      expLine = [44 45
+                 47 48];
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo1(pos,...
+          handle,expLine,...
+          'Не выведена первая траектория установления хищников для второго семейства'));
+    end
+    
+    function testPlotsFamily2FirstSolutionTrajectoryForNEqualTo2(testCase)
+      expLine = [82 84
+                 88 90];
+      testCase.verifyPlottedOnSecondSubplot(...
+        @(pos,handle) testCase.verifyLinePlottedForNEqualTo2(pos,...
+          handle,expLine,...
+          'Не выведена первая траектория установления хищников для второго семейства'));
+    end
+    
+%     function testPlotsFamily2SecondSolutionLastPointForNEqualTo1(testCase)
+%       expLine = [50 51
+%                  53 54];
+%       testCase.verifyPlottedOnSecondSubplot(...
+%         @(pos,handle) testCase.verifyPointPlottedForNEqualTo1(pos,...
+%           handle,expLine,...
+%           'Не выведено второе решение для второго семейства, которое является равновесием'));
+%     end
+    
+%     function testPlotsFamily2SecondSolutionLastPointForNEqualTo2(testCase)
+%       expLine = [ 94  96
+%                  100 102];
+%       testCase.verifyPlottedOnSecondSubplot(...
+%         @(pos,handle) testCase.verifyPointPlottedForNEqualTo2(pos,...
+%           handle,expLine,...
+%           'Не выведено второе решение для второго семейства, которое является равновесием'));
+%     end
+    
+    function testDoesNotOverwriteFamily1Plots(testCase)
       testCase.setupFamiliesForNEqualTo1();
       pos = 1;
-      handle = 25;
-      testCase.setupSubplot(pos,handle);
-      testCase.act(); 
-      
-      callInfo = struct;
-      callInfo.fcn = 'hold';
-      args = struct;
-      args.handle = handle;
-      args.arg = 'on';
-      callInfo.args = args;
-      holdOnCallIndices = getArrayItemIndices(...
-        callInfo,testCase.callSequence);
-      testCase.assertFalse(isempty(holdOnCallIndices),...
-        'Некоторые графики затираются следующими');
-      
-      callInfo.fcn = 'plot';
-      args = struct;
-      args.handle = handle;
-      callInfo.args = args;
-      plotCallIndices = getArrayItemIndices(...
-        callInfo,testCase.callSequence);
-      plotBeforeHoldOnIndices = find(plotCallIndices < holdOnCallIndices(1));
-      testCase.assertLessThanOrEqual(length(plotBeforeHoldOnIndices),1,...
-        'Некоторые графики затираются следующими');
-      
-      callInfo.fcn = 'hold';
-      args = struct;
-      args.arg = 'off';
-      callInfo.args = args;
-      holdOffCallIndices = getArrayItemIndices(...
-        callInfo,testCase.callSequence);
-      holdOffBeforeLastPlotCallIndices = find(...
-        holdOffCallIndices < plotCallIndices(end),1);
-      testCase.verifyTrue(isempty(holdOffBeforeLastPlotCallIndices),...
-        'Некоторые графики затираются следующими');
+      handle = 55;
+      testCase.verifyDidNotOverwritePlots(pos,handle,...
+        'Некоторые графики первого семейства затираются следующими');
+    end
+    
+    function testDoesNotOverwriteFamily2Plots(testCase)
+      testCase.setupFamiliesForNEqualTo1();
+      pos = 2;
+      handle = 56;
+      testCase.verifyDidNotOverwritePlots(pos,handle,...
+        'Некоторые графики второго семейства затираются следующими');
     end
   end
   

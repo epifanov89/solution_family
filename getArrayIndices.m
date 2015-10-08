@@ -1,5 +1,9 @@
-function ind = getArrayIndices( func,arr )
+function ind = getArrayIndices( func,arr,forEmptinessCheck )
 
-ind = find(getArrayIndexMask(func,arr));
+if nargin == 2
+  ind = find(getArrayIndexMask(func,arr));
+elseif nargin == 3
+  ind = find(getArrayIndexMask(func,arr),forEmptinessCheck);
+end
 end
 

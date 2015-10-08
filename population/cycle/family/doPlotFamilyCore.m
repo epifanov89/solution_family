@@ -1,18 +1,18 @@
 function doPlotFamilyCore( getMFilename,getFileDir,...
   getDirListing,loadVars,getLastRowWithExtremeElementValue,...
   getSolutionPartForTrajectoryPlot,subplot,plot,hold,lbl,xlbl,ylbl,gca,set)
-%	DOPLOTFAMILYCORE Изображает график семейства с установлением из двух 
-% начальных данных
+%	DOPLOTFAMILYCORE Изображает графики двух семейств с установлениями из 
+% двух начальных данных
 %   На графике выводятся максимальные плотности популяций хищников,
-%   соединенные сплошной линией, и пунктиром установление из двух близких
-%   начальных данных к разным режимам
+%   соединенные сплошной линией, и пунктиром установление из двух
+%   начальных данных к разным режимам для двух семейств
 
 filename = getMFilename('fullpath');
 curFileDir = getFileDir(filename);
 familyNameStart = 'p=1+0.5sin(2 pi x)\l2=';
 family1FirstPredatorMortality = 1.1;
-family1Path = sprintf('%ssolution_results\\families\\%s%.1f\\',curFileDir,...
-  familyNameStart,family1FirstPredatorMortality);
+family1Path = sprintf('%ssolution_results\\families\\%s%.1f\\',...
+  curFileDir,familyNameStart,family1FirstPredatorMortality);
 listing = getDirListing(strcat(family1Path,'*.mat'));
 
 % Отбрасываем папки
@@ -69,11 +69,11 @@ match = sortedMatches{matchIndex};
 
 loadedVars = loadVars(strcat(family1Path,match),'w');
 
-solutions = {};
+solArr = {};
 
 sol = loadedVars.w;
 
-solutions = [solutions,sol];
+solArr = [solArr,sol];
 
 sz = size(sol);
 N = sz(2)/3;
@@ -88,7 +88,7 @@ secondPredatorCenterPointVarIndex = 2*N+centerPointIndex;
     secondPredatorCenterPointVarIndex,maxExtremeValueKind);
 wpredatormax(1,1) = maxPredatorDensitiesPoint(N+centerPointIndex);
 wpredatormax(2,1) = maxPredatorDensitiesPoint(2*N+centerPointIndex);
-solno = 2;
+solNo = 2;
 
 prevN = N;
 
@@ -101,7 +101,7 @@ while matchIndex <= length(sortedMatches)
     
     sol = loadedVars.w;
     
-    solutions = [solutions,sol];
+    solArr = [solArr,sol];
     
     sz = size(sol);
     N = sz(2)/3;
@@ -116,10 +116,10 @@ while matchIndex <= length(sortedMatches)
         firstPredatorCenterPointVarIndex,maxExtremeValueKind);
     maxPredatorDensitiesPointIndices = ...
       [maxPredatorDensitiesPointIndices,maxPredatorDensitiesPointIndex];
-    wpredatormax(1,solno) = maxPredatorDensitiesPoint(N+centerPointIndex);
-    wpredatormax(2,solno) = maxPredatorDensitiesPoint(2*N+centerPointIndex);
+    wpredatormax(1,solNo) = maxPredatorDensitiesPoint(N+centerPointIndex);
+    wpredatormax(2,solNo) = maxPredatorDensitiesPoint(2*N+centerPointIndex);
                   
-    solno = solno+1;
+    solNo = solNo+1;
     
     prevN = N;
   end
@@ -172,9 +172,9 @@ l4 = plot(h1,...
 labelWithFont(l4,'B');
 
 
-solno = 2;
+solNo = 2;
 firstSolForTrajectoryPlot = getSolutionPartForTrajectoryPlot(...
-  solutions{solno},maxPredatorDensitiesPointIndices(solno));
+  solArr{solNo},maxPredatorDensitiesPointIndices(solNo));
 
 l1 = plot(h1,...
   firstSolForTrajectoryPlot(:,firstPredatorCenterPointVarIndex),...
@@ -182,9 +182,9 @@ l1 = plot(h1,...
   tillSteadyLineSpec,lineWidthKey,lineWidthVal);
 labelWithFont(l1,'C');
 
-solno = length(solutions)-1;
+solNo = length(solArr)-1;
 secondSolForTrajectoryPlot = getSolutionPartForTrajectoryPlot(...
-  solutions{solno},maxPredatorDensitiesPointIndices(solno));
+  solArr{solNo},maxPredatorDensitiesPointIndices(solNo));
 
 l2 = plot(h1,...
   secondSolForTrajectoryPlot(:,firstPredatorCenterPointVarIndex),...
@@ -199,6 +199,131 @@ xlbl('$V$',fontNameKey,fontNameVal,fontSizeKey,fontSizeVal,...
   interpreterKey,interpreterVal);
 ylbl('$W$','rot',0,fontNameKey,fontNameVal,fontSizeKey,fontSizeVal,...
   interpreterKey,interpreterVal);
+
+
+familyFirstPredatorMortality = 1.2;
+familyPath = sprintf('%ssolution_results\\families\\%s%.1f\\',...
+  curFileDir,familyNameStart,familyFirstPredatorMortality);
+listing = getDirListing(strcat(familyPath,'*.mat'));
+filenames = {listing(:).name};
+
+% Выбираем только файлы с результатами решений семейства
+[tokens,matches] = regexp(filenames,'(\d+).mat','tokens','match');
+
+numbers = [];
+for tokenIndex = 1:length(tokens)
+  token = tokens{tokenIndex};
+  if ~isempty(token)
+    numbers = [numbers,str2double(token{1})];
+  end
+end
+
+nnumber = length(numbers);
+
+[~,sortedNumbersIX] = sort(numbers);
+sortedMatches = cell(1,nnumber);
+for sortedNumberIXIndex = 1:nnumber
+  match = matches{sortedNumbersIX(sortedNumberIXIndex)};
+  if ~isempty(match)
+    sortedMatches{sortedNumberIXIndex} = match{1};
+  end
+end
+
+matchIndex = 1;
+while isempty(sortedMatches{matchIndex})
+  matchIndex = matchIndex+1;
+end
+
+match = sortedMatches{matchIndex};
+
+loadedVars = loadVars(strcat(familyPath,match),'w');
+
+solArr = {};
+
+sol = loadedVars.w;
+
+solArr = [solArr,sol];
+
+[maxPredatorDensitiesPoint,maxPredatorDensitiesPointIndices] = ...
+  getLastRowWithExtremeElementValue(sol,...
+    secondPredatorCenterPointVarIndex,maxExtremeValueKind);
+wpredatormax(1,1) = maxPredatorDensitiesPoint(N+centerPointIndex);
+wpredatormax(2,1) = maxPredatorDensitiesPoint(2*N+centerPointIndex);
+
+solNo = 2;
+
+matchIndex = matchIndex+1;
+
+while matchIndex <= length(sortedMatches)
+  match = sortedMatches{matchIndex};
+  if ~isempty(match)
+    loadedVars = loadVars(strcat(familyPath,match),'w');
+    
+    sol = loadedVars.w;    
+     
+    solArr = [solArr,sol];
+    
+    [maxPredatorDensitiesPoint,maxPredatorDensitiesPointIndex] = ...
+      getLastRowWithExtremeElementValue(sol,...
+        firstPredatorCenterPointVarIndex,maxExtremeValueKind);
+    maxPredatorDensitiesPointIndices = ...
+      [maxPredatorDensitiesPointIndices,maxPredatorDensitiesPointIndex];
+    wpredatormax(1,solNo) = maxPredatorDensitiesPoint(N+centerPointIndex);
+    wpredatormax(2,solNo) = maxPredatorDensitiesPoint(...
+      2*N+centerPointIndex);
+    
+    solNo = solNo+1;
+  end
+  matchIndex = matchIndex+1;
+end
+
+pos = 2;
+h = subplot(nrow,ncol,pos);
+
+plot(h,wpredatormax(1,:),wpredatormax(2,:),familyLineSpec,...
+  lineWidthKey,lineWidthVal);
+
+hold(h,'on');
+
+filename = 'zeroFirstPredator.mat';
+predatorCenterPointVarIndex = secondPredatorCenterPointVarIndex;
+label = 'E';
+plotZeroOnePredatorMaxAnotherPredator();
+
+filename = 'zeroSecondPredator.mat';
+predatorCenterPointVarIndex = firstPredatorCenterPointVarIndex;
+label = 'F';
+plotZeroOnePredatorMaxAnotherPredator();
+
+solNo = 2;
+label = 'G';
+plotSolTrajectory();
+
+solNo = length(solArr)-1;
+label = 'H';
+plotSolTrajectory();
+
+  function plotZeroOnePredatorMaxAnotherPredator()
+    zeroOnePredatorSolution = loadVars(strcat(familyPath,...
+      filename),'w');
+    [maxPredatorDensities,~] = getLastRowWithExtremeElementValue(...
+      zeroOnePredatorSolution.w,predatorCenterPointVarIndex,...
+      maxExtremeValueKind);
+    l = plot(h,...
+      maxPredatorDensities(firstPredatorCenterPointVarIndex),...
+      maxPredatorDensities(secondPredatorCenterPointVarIndex),...
+      zeroOnePredatorLineSpec,lineWidthKey,lineWidthVal);
+    labelWithFont(l,label);
+  end
+
+  function plotSolTrajectory()
+    solPart = getSolutionPartForTrajectoryPlot(...
+      solArr{solNo},maxPredatorDensitiesPointIndices(solNo));
+    l1 = plot(h,solPart(:,firstPredatorCenterPointVarIndex),...
+      solPart(:,secondPredatorCenterPointVarIndex),...
+      tillSteadyLineSpec,lineWidthKey,lineWidthVal);
+    labelWithFont(l1,label);
+  end
 
   function labelWithFont(h,name)
     lbl(h,name,fontNameKey,fontNameVal,fontSizeKey,fontSizeVal,...

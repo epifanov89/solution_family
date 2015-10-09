@@ -295,9 +295,7 @@ predatorCenterPointVarIndex = firstPredatorCenterPointVarIndex;
 label = 'F';
 plotZeroOnePredatorMaxAnotherPredator();
 
-solNo = 2;
-label = 'G';
-plotSolTrajectory();
+
 
 solNo = length(solArr)-1;
 label = 'H';

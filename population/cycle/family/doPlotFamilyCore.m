@@ -204,7 +204,8 @@ plotFam(@plotSteadyState);
     l = plot(h,sol(end,firstPredatorCenterPointVarIndex),...
       sol(end,secondPredatorCenterPointVarIndex),...
       'ko',lineWidthKey,steadyStatePtWidthVal);
-    labelWithFont(l,'G');
+    steadyStateLbl = 'G';
+    labelWithFont(l,steadyStateLbl);
   end
 
   function labelWithFont(h,name)

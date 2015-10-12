@@ -23,7 +23,7 @@ classdef PlotTestHelperBase < TestHelperBase
   methods (Access = protected)
     function verifyLinePlotted(testCase,line,msg)
       testCase.act();
-      testCase.verifyContains(testCase.plottedLines,line,msg);
+      testCase.verifyContainsItem(testCase.plottedLines,line,msg);
     end
         
     function fakeClose(testCase,arg)

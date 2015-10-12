@@ -1,4 +1,4 @@
-classdef LoadTestHelper < handle
+classdef LoadTestHelper < TestHelperBase
   
   properties (GetAccess = protected,SetAccess = protected)
     argsPassedInToLoad
@@ -27,7 +27,7 @@ classdef LoadTestHelper < handle
       args = struct;
       args.filename = filename;
       args.varnames = varnames;
-      testCase.verifyTrue(contains(testCase.argsPassedInToLoad,args),...
+      testCase.verifyContainsItem(testCase.argsPassedInToLoad,args,...
         'Не загружены переменные из файла');
     end
     

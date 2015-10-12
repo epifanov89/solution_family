@@ -1,11 +1,10 @@
 function doPlotFamilyCore( getMFilename,getFileDir,...
   getDirListing,loadVars,getLastRowWithExtremeElementValue,...
   getSolutionPartForTrajectoryPlot,subplot,plot,hold,lbl,xlbl,ylbl,set)
-%	DOPLOTFAMILYCORE Изображает графики двух семейств с установлениями из 
-% двух начальных данных
+%	DOPLOTFAMILYCORE Изображает графики двух семейств и отмечает по два
+%	решения семейства
 %   На графике выводятся максимальные плотности популяций хищников,
-%   соединенные сплошной линией, и пунктиром установление из двух
-%   начальных данных к разным режимам для двух семейств
+%   соединенные сплошной линией, и по два разных режима для двух семейств
 
 filename = getMFilename('fullpath');
 curFileDir = getFileDir(filename);
@@ -43,7 +42,9 @@ plotFam(@(h,solArr,maxPredatorDensitiesPointIndices,...
 
 famNo = 2;
 firstPredatorMortality = 1.2;
-plotFam(@plotSteadyState);
+XTick = [0 0.4 0.8];
+YTick = [0 0.4 0.8];
+plotFam(@plotSteadyState,XTick,YTick);
 
   function plotFam(secondSolPlotFcn,XTick,YTick)
     familyPath = sprintf('%ssolution_results\\families\\%s%.1f\\',...

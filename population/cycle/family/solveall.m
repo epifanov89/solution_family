@@ -2,15 +2,16 @@ function solveall()
 
 preyDiffusionCoeff = 0.2;
 secondPredatorDiffusionCoeff = 0.24;
-firstPredatorMortality = 1.1;
-resourceDeviation = 0.5;
+firstPredatorMortality = 1.2;
+resourceVariation = 0.5;
 N = 24;
-tspan = 0:0.002:100;
-solver = @myode4;
+tspan = [0,1000];
+solver = @ode15s;
 nsol = 10;
-familyName = 'families\p=1+0.5sin(2 pi x)\l2=1.1\';
+familyName = sprintf('p=1+%.1fsin(2 pi x)\\l2=%.1f\\',...
+  resourceVariation,firstPredatorMortality);
 doSolveAll(@doSolveAllCore,preyDiffusionCoeff,...
-  secondPredatorDiffusionCoeff,firstPredatorMortality,resourceDeviation,...
+  secondPredatorDiffusionCoeff,firstPredatorMortality,resourceVariation,...
   N,tspan,solver,nsol,familyName);
 end
 

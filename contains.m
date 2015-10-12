@@ -1,11 +1,5 @@
-function c = contains( arr,item )
+function c = contains( func,arr )
 
-if iscellstr(arr)
-  comparator = @strcmp;
-else
-  comparator = @isequal;
-end
-
-c = ~isempty(getArrayIndices(@(i) comparator(i,item),arr,1));
+c = ~isempty(getArrayIndices(func,arr,1));
 end
 

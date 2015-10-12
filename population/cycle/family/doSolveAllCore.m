@@ -1,25 +1,51 @@
 function doSolveAllCore( preyDiffusionCoeff,...
   secondPredatorDiffusionCoeff,firstPredatorMortality,resourceDeviation,...
-  N,tspan,solver,nsol,familyName,currentDirName,exist,solveOne )
+  N,tspan,solver,nsol,famName,currentDirName,dir,solveOne )
 
 curDirName = currentDirName();
 solutionResultsDirname = strcat(curDirName,'solution_results\');
+famDirname = strcat('families\',famName);
+listing = dir(strcat(solutionResultsDirname,famDirname,'*.mat'));
+filenames = {listing(:).name};
 
-solno = 0;
-checkAndSolve(solno,@getZeroFirstPredatorInitialData);
+% Выбираем только файлы с результатами решений семейства
+[~,matches] = regexp(filenames,'(\d+).mat','tokens','match');
 
-for solno = 1:nsol
-  checkAndSolve(solno,@(~) getCombinedPredatorDensitiesInitialData(...
-    strcat(familyName,'0.mat'),nsol,solno));
+getInitialData = @getZeroFirstPredatorInitialData;
+
+if length(getArrayIndices(@(m) ~isempty(m),matches)) == nsol+1  
+  filename = sprintf('%s0.mat',famDirname);
+  solone();
+  
+  for solno = 1:nsol
+    filename = sprintf('%s%d.mat',famDirname,solno);
+    getInitialData = @(~) getCombinedPredatorDensitiesInitialData(...
+      strcat(famDirname,'0.mat',nsol,solno));
+    solone();
+  end
+else
+  solno = 0;
+  checkAndSolve();
+  
+  for solno = 1:nsol
+    getInitialData = @(~) getCombinedPredatorDensitiesInitialData(...
+      strcat(famDirname,'0.mat'),nsol,solno);
+    checkAndSolve();
+  end
 end
 
-  function checkAndSolve(solno,getInitialData)
-    filename = sprintf('%s%d.mat',familyName,solno);
-    if ~exist(strcat(solutionResultsDirname,filename),'file')
-      solveOne(filename,preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
-        firstPredatorMortality,resourceDeviation,N,tspan,...
-        getInitialData,solver);    
+  function checkAndSolve()
+    filename = sprintf('%s%d.mat',famDirname,solno);
+    if ~contains(@(m) ~isempty(m)...
+        && strcmp(m{1},sprintf('%d.mat',solno)),matches)
+      solone();    
     end
+  end
+
+  function solone()
+    solveOne(filename,preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
+      firstPredatorMortality,resourceDeviation,N,tspan,...
+      getInitialData,solver);    
   end
 
 end

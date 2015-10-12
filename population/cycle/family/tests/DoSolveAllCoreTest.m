@@ -1,4 +1,4 @@
-classdef DoSolveAllCoreTest < matlab.unittest.TestCase...
+classdef DoSolveAllCoreTest < TestHelperBase...
     & FakeCurrentDirNameHelper
   
   properties
@@ -11,13 +11,13 @@ classdef DoSolveAllCoreTest < matlab.unittest.TestCase...
     solver
     nsol
     familyName
-    existent
+    namePassedInToDir
+    listing
     argsPassedInToSolveOne
   end
   
   methods (TestMethodSetup)
     function setup(testCase)
-      testCase.dirname = 'dir\';
       testCase.preyDiffusionCoeff = 0.2;
       testCase.secondPredatorDiffusionCoeff = 0.24;
       testCase.firstPredatorMortality = 1;
@@ -31,6 +31,39 @@ classdef DoSolveAllCoreTest < matlab.unittest.TestCase...
   end
   
   methods
+    function setupFamDirListing(testCase)      
+      testCase.setupZeroFirstPredatorSol();      
+      testCase.setupFamFirstSol();
+    end
+    
+    function setupZeroFirstPredatorSol(testCase)
+      filename = 'solution_results\families\family\0.mat';
+      testCase.setupDirListing(filename);
+      testCase.setupForeignFile();
+    end
+    
+    function setupFamFirstSol(testCase)
+      filename = 'solution_results\families\family\1.mat';
+      testCase.setupDirListing(filename);
+      testCase.setupForeignFile();
+    end
+    
+    function setupForeignFile(testCase)
+      filename = 'solution_results\families\family\foreign_file.mat';
+      testCase.setupDirListing(filename);
+    end
+    
+    function setupDirListing(testCase,filename)
+      file = struct;
+      file.name = filename;
+      testCase.listing = [testCase.listing,file];
+    end
+    
+    function files = fakeDir(testCase,name)   
+      testCase.namePassedInToDir = name;
+      files = testCase.listing;
+    end
+    
     function fakeSolveOne(testCase,solutionResultsFilename,...
         preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
         firstPredatorMortality,resourceDeviation,N,tspan,...
@@ -49,97 +82,117 @@ classdef DoSolveAllCoreTest < matlab.unittest.TestCase...
         [testCase.argsPassedInToSolveOne,args];
     end
     
-    function e = fakeExist(testCase,filename,kind)
-      e = ~isempty(find(cellfun(@(name) strcmp(name,filename),...
-        testCase.existent.(kind)),1));
+    function args = getZeroFirstPredatorSolArgs(testCase)
+      args = struct;
+      args.solutionResultsFilename = 'families\family\0.mat';
+      args.preyDiffusionCoeff = testCase.preyDiffusionCoeff;
+      args.secondPredatorDiffusionCoeff = ...
+        testCase.secondPredatorDiffusionCoeff;
+      args.firstPredatorMortality = testCase.firstPredatorMortality;
+      args.resourceDeviation = testCase.resourceDeviation;
+      args.N = testCase.N;
+      args.tspan = testCase.tspan;
+      args.solver = testCase.solver;
+      args.getInitialData = @getZeroFirstPredatorInitialData;
     end
     
+    function found = isFamFirstSolFound(testCase,args)
+      filename = 'families\family\1.mat';
+      found = testCase.isSolFound(filename,args);
+    end
+    
+    function found = isSolFound(testCase,filename,args)
+      found = strcmp(args.solutionResultsFilename,filename)...
+        && args.preyDiffusionCoeff == testCase.preyDiffusionCoeff...
+        && args.secondPredatorDiffusionCoeff == ...
+          testCase.secondPredatorDiffusionCoeff...
+        && args.firstPredatorMortality == ...
+          testCase.firstPredatorMortality...
+        && args.resourceDeviation == testCase.resourceDeviation...
+        && args.N == testCase.N...
+        && isequal(args.tspan,testCase.tspan)...
+        && isequal(args.solver,testCase.solver);
+    end
+  end
+  
+  methods (Access = protected)
     function act(testCase)
       doSolveAllCore(testCase.preyDiffusionCoeff,...
         testCase.secondPredatorDiffusionCoeff,...
         testCase.firstPredatorMortality,...
         testCase.resourceDeviation,testCase.N,testCase.tspan,...
         testCase.solver,testCase.nsol,testCase.familyName,...
-        @testCase.fakeCurrentDirName,@testCase.fakeExist,...
+        @testCase.fakeCurrentDirName,@testCase.fakeDir,...
         @testCase.fakeSolveOne);
     end
   end
   
   methods (Test)
-    function testFindsZeroFirstPredatorSolutionIfItHasNotFoundYet(testCase)
-      testCase.existent = struct;
-      testCase.existent.('file') = {'dir\solution_results\family\1.mat'};
+    function testGetsFamDirListing(testCase)
+      testCase.dirname = 'dir\';
+      filename = 'dir\solution_results\families\family\0.mat';
+      testCase.setupDirListing(filename);
       testCase.act();
-      expArgs = struct;
-      expArgs.solutionResultsFilename = 'family\0.mat';
-      expArgs.preyDiffusionCoeff = testCase.preyDiffusionCoeff;
-      expArgs.secondPredatorDiffusionCoeff = ...
-        testCase.secondPredatorDiffusionCoeff;
-      expArgs.firstPredatorMortality = testCase.firstPredatorMortality;
-      expArgs.resourceDeviation = testCase.resourceDeviation;
-      expArgs.N = testCase.N;
-      expArgs.tspan = testCase.tspan;
-      expArgs.solver = testCase.solver;
-      expArgs.getInitialData = @getZeroFirstPredatorInitialData;
-      testCase.verifyFalse(isempty(find(arrayfun(...
-        @(actArgs) isequal(actArgs,expArgs),...
-        testCase.argsPassedInToSolveOne),1)),...
-        'Не найдено решение семейства с нулевым первым хищником');
+      testCase.verifyEqual(testCase.namePassedInToDir,...
+        'dir\solution_results\families\family\*.mat',...
+        'Не получен список имен файлов семейства');
     end
     
-    function testDoesNotFindZeroFirstPredatorSolutionIfItIsAlreadyFound(testCase)
-      testCase.existent = struct;
-      testCase.existent.('file') = {'dir\solution_results\family\0.mat'};
-      testCase.act();
-      expArgs = struct;
-      expArgs.solutionResultsFilename = 'family\0.mat';
-      expArgs.preyDiffusionCoeff = testCase.preyDiffusionCoeff;
-      expArgs.secondPredatorDiffusionCoeff = ...
-        testCase.secondPredatorDiffusionCoeff;
-      expArgs.firstPredatorMortality = testCase.firstPredatorMortality;
-      expArgs.resourceDeviation = testCase.resourceDeviation;
-      expArgs.N = testCase.N;
-      expArgs.tspan = testCase.tspan;
-      expArgs.solver = testCase.solver;
-      expArgs.getInitialData = @getZeroFirstPredatorInitialData;
-      testCase.verifyTrue(isempty(find(arrayfun(...
-        @(actArgs) isequal(actArgs,expArgs),...
-        testCase.argsPassedInToSolveOne),1)),...
-        'Попытка повторно найти решение семейства с нулевым первым хищником');
+    function testDoesNotSolveForForeignFiles(testCase)
+      testCase.setupZeroFirstPredatorSol();      
+      filename = 'families\family\foreign_file.mat';
+      testCase.verifyDoesNotContain(...
+        @(args) testCase.isSolFound(filename,args),...
+        testCase.argsPassedInToSolveOne,...
+        'Попытка найти решение, не относящееся к семейству');
     end
     
-    function testFindsFirstFamilySolutionIfItHasNotBeenFoundYet(testCase)
-      testCase.existent = struct;
-      testCase.existent.('file') = {'dir\solution_results\family\0.mat'};
+    function testFindsZeroFirstPredatorSolIfItHasNotBeenFoundYet(testCase)
+      testCase.setupFamFirstSol();
       testCase.act();
-      testCase.verifyFalse(isempty(find(arrayfun(...
-        @(actArgs) strcmp(actArgs.solutionResultsFilename,'family\1.mat')...
-          && actArgs.preyDiffusionCoeff == testCase.preyDiffusionCoeff...
-          && actArgs.secondPredatorDiffusionCoeff == testCase.secondPredatorDiffusionCoeff...
-          && actArgs.firstPredatorMortality == testCase.firstPredatorMortality...
-          && actArgs.resourceDeviation == testCase.resourceDeviation...
-          && actArgs.N == testCase.N...
-          && isequal(actArgs.tspan,testCase.tspan)...
-          && isequal(actArgs.solver,testCase.solver),...
-        testCase.argsPassedInToSolveOne),1)),...
-        'Не найдено первое решение семейства');
+      expArgs = testCase.getZeroFirstPredatorSolArgs();
+      testCase.verifyContainsItem(testCase.argsPassedInToSolveOne,...
+        expArgs,'Не найдено решение с нулевым первым хищником');
     end
     
-    function testDoesNotFindFirstFamilySolutionIfItIsAlreadyFound(testCase)
-      testCase.existent = struct;
-      testCase.existent.('file') = {'dir\solution_results\family\1.mat'};
+    function testDoesNotFindZeroFirstPredatorSolIfItHasBeenFoundAlreadyButNotAllSolsHaveBeenFoundYet(testCase)
+      testCase.setupZeroFirstPredatorSol();
       testCase.act();
-      testCase.verifyTrue(isempty(find(arrayfun(...
-        @(actArgs) strcmp(actArgs.solutionResultsFilename,'family\1.mat')...
-          && actArgs.preyDiffusionCoeff == testCase.preyDiffusionCoeff...
-          && actArgs.secondPredatorDiffusionCoeff == testCase.secondPredatorDiffusionCoeff...
-          && actArgs.firstPredatorMortality == testCase.firstPredatorMortality...
-          && actArgs.resourceDeviation == testCase.resourceDeviation...
-          && actArgs.N == testCase.N...
-          && isequal(actArgs.tspan,testCase.tspan)...
-          && isequal(actArgs.solver,testCase.solver),...
-        testCase.argsPassedInToSolveOne),1)),...
-        'Попытка повторно найти первое решение семейства');
+      expArgs = testCase.getZeroFirstPredatorSolArgs();
+      testCase.verifyDoesNotContainItem(testCase.argsPassedInToSolveOne,...
+        expArgs,...
+        'Попытка повторно найти решение с нулевым первым хищником');
+    end
+    
+    function testFindsFirstFamSolIfItHasNotBeenFoundYet(testCase)
+      testCase.setupZeroFirstPredatorSol();
+      testCase.act();
+      testCase.verifyContains(@testCase.isFamFirstSolFound,...
+        testCase.argsPassedInToSolveOne,...
+        'Не найдено первое решение');
+    end
+    
+    function testDoesNotFindFirstFamSolIfItHasBeenFoundAlreadyButNotAllSolsHaveBeenFoundYet(testCase)
+      testCase.setupFamFirstSol();      
+      testCase.act();
+      testCase.verifyDoesNotContain(@testCase.isFamFirstSolFound,...
+        testCase.argsPassedInToSolveOne,...
+        'Попытка повторно найти первое решение');
+    end
+    
+    function testContinuesToFindZeroFirstPredatorSolIfAllSolsHaveBeenFoundAlready(testCase)
+      testCase.setupFamDirListing();      
+      testCase.act();
+      expArgs = testCase.getZeroFirstPredatorSolArgs();
+      testCase.verifyContainsItem(testCase.argsPassedInToSolveOne,...
+        expArgs,'Не продолжено решение с нулевым первым хищником');
+    end
+    
+    function testContinuesToFindFamFirstSolIfAllSolsHaveBeenFoundAlready(testCase)
+      testCase.setupFamDirListing();
+      testCase.act();
+      testCase.verifyContains(@testCase.isFamFirstSolFound,...
+        testCase.argsPassedInToSolveOne,'Не продолжено первое решение');
     end
   end
   

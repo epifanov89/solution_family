@@ -12,7 +12,7 @@ classdef DoSolveAllTest < matlab.unittest.TestCase
     passedInNSol
     passedInFamilyName
     passedInCurrentDirName
-    passedInExist
+    passedInDir
     passedInSolveOne
   end
   
@@ -20,7 +20,7 @@ classdef DoSolveAllTest < matlab.unittest.TestCase
     function fakeFcnToPassIn(testCase,preyDiffusionCoeff,...
         secondPredatorDiffusionCoeff,firstPredatorMortality,...
         resourceDeviation,N,tspan,solver,nsol,familyName,currentDirName,...
-        exist,solveOne)
+        dir,solveOne)
       testCase.isPassedInFunctionCalled = true;
       testCase.passedInPreyDiffusionCoeff = preyDiffusionCoeff;
       testCase.passedInSecondPredatorDiffusionCoeff = ...
@@ -33,7 +33,7 @@ classdef DoSolveAllTest < matlab.unittest.TestCase
       testCase.passedInNSol = nsol;
       testCase.passedInFamilyName = familyName;
       testCase.passedInCurrentDirName = currentDirName;
-      testCase.passedInExist = exist;
+      testCase.passedInDir = dir;
       testCase.passedInSolveOne = solveOne;
     end
   end
@@ -82,8 +82,8 @@ classdef DoSolveAllTest < matlab.unittest.TestCase
       testCase.verifyEqual(testCase.passedInCurrentDirName,...
         @currentDirName,...
         'Передана неправильная функция получения имени текущей папки');
-      testCase.verifyEqual(testCase.passedInExist,@exist,...
-        'Передана неправильная функция проверки существования файла');
+      testCase.verifyEqual(testCase.passedInDir,@dir,...
+        'Передана неправильная функция получения листинга папки');
       testCase.verifyEqual(testCase.passedInSolveOne,@solveOne,...
         'Передана неправильная функция нахождения одного решения');
     end

@@ -40,7 +40,7 @@ classdef SubplotTestHelper < TestHelperBase
       args.nrow = nrow;
       args.ncol = ncol;
       args.pos = pos;
-      testCase.verifyContains(testCase.argsPassedInToSubplot,args,msg);
+      testCase.verifyContainsItem(testCase.argsPassedInToSubplot,args,msg);
     end
   end
   

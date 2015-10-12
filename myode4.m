@@ -220,7 +220,7 @@ end
 solver_output = {};
   
 if (nout > 0)
-  solver_output{1} = tout;
+  solver_output{1} = tout.';
   solver_output{2} = yout(:,1:nout).';
   solver_output{3} = tpoincareout.';
   solver_output{4} = ypoincareout.';

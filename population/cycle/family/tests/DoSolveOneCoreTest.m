@@ -67,14 +67,14 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
       testCase.w0 = [1 2 1 2 1 1 2 1 2 1 1 2 1 2 1];
       testCase.w = [2 3 2 3 2 2 3 2 3 2 2 3 2 3 2
                     4 5 4 5 4 4 5 4 5 4 4 5 4 5 4];
-      testCase.t = [2 3];
+      testCase.t = [2 3]';
       
       testCase.NPassedInToGetInitialDataArr = [];
       
       testCase.varsToReturnFromLoad = struct;
       testCase.varsToReturnFromLoad.w = [2 3 2 3 2 2 3 2 3 2 2 3 2 3 2
                                          1 2 1 2 1 1 2 1 2 1 1 2 1 2 1];
-      testCase.varsToReturnFromLoad.t = [0 1];
+      testCase.varsToReturnFromLoad.t = [0 1]';
       testCase.loadedVars = [];
       testCase.savedVars = [];
       testCase.createdDirArray = {};
@@ -476,7 +476,7 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
       saved.filename = 'dir\solution_results\results.mat';
       vars = struct;
       vars.w = [testCase.varsToReturnFromLoad.w;testCase.w];
-      vars.t = [testCase.varsToReturnFromLoad.t,testCase.t];
+      vars.t = [0 1 2 3]';
       saved.vars = vars;
       testCase.verifyFalse(isempty(find(arrayfun(...
         @(s) isequal(s,saved),testCase.savedVars),1)),...

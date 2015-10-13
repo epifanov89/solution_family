@@ -73,7 +73,7 @@ plotFam(@plotSteadyState,XTick,YTick);
         sortedMatches{sortedNumberIXIndex} = match{1};
       end
     end
-
+    
     matchIndex = 1;
     while isempty(sortedMatches{matchIndex})
       matchIndex = matchIndex+1;

@@ -39,6 +39,9 @@ classdef PlotTestHelperBase < TestHelperBase
     function fakeYLabel(varargin)
     end
     
+    function fakeZLabel(varargin)
+    end
+    
     function h = fakeGCA(~)
       h = [];
     end

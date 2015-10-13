@@ -1,4 +1,9 @@
 classdef TestHelperBase < matlab.unittest.TestCase  
+  
+  properties (GetAccess = protected, SetAccess = protected)
+    varsToReturnFromGetLastRowWithExtremeElementValue
+  end
+  
   methods (Access = protected)
     function verifyContainsItem(testCase,arr,item,msg)
       testCase.verifyTrue(containsItem(arr,item),msg);
@@ -16,6 +21,10 @@ classdef TestHelperBase < matlab.unittest.TestCase
       testCase.verifyFalse(contains(func,arr),msg);
     end
     
+    function str = getMsg(~,msgStart,N)
+      str = sprintf('%s при N = %d',msgStart,N);
+    end
+        
     function act(~)
     end
   end

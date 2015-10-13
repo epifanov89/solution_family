@@ -40,4 +40,8 @@ fullSuite = [fullSuite,TestSuite.fromClass(?DoGetPeriodTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?DoGetPoincareMapLastPointCoreTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?DoGetPoincareMapLastPointTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?GetSolutionPartTest)];
+fullSuite = [fullSuite,TestSuite.fromClass(...
+  ?DoPlotCombinedFamSolPhaseTrajectoriesCoreTest)];
+fullSuite = [fullSuite,TestSuite.fromClass(...
+  ?DoPlotCombinedFamSolPhaseTrajectoriesTest)];
 result = run(fullSuite)

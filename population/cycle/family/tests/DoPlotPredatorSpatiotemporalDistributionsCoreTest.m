@@ -4,7 +4,6 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
   
   properties
     argsPassedInToGetLastRowWithExtremeElementValue
-    varsToReturnFromGetLastRowWithExtremeElementValue
     pointIndex
     argsPassedInToGetPeriod
     periodsToReturnFromGetPeriod

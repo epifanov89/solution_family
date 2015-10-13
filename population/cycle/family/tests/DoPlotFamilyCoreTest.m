@@ -12,7 +12,6 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
     namesPassedInToDir
     listingsToReturnFromDir    
     argsPassedInToGetLastRowWithExtremeElementValue
-    varsToReturnFromGetLastRowWithExtremeElementValue
     argsPassedInToGetSolutionPartForTrajectoryPlot
     solutionPartsForTrajectoryPlot
     getSolutionPartForTrajectoryPlotCallNo
@@ -737,10 +736,6 @@ classdef DoPlotFamilyCoreTest < MFilenameAndGetFileDirnameTestBase...
       nvar = 9;
       handle = testCase.getAxesHandle(nvar,pos);
       testCase.verifyPointPlotted(pos,handle,N,pt,msgStart);
-    end
-    
-    function str = getMsg(~,msgStart,N)
-      str = sprintf('%s при N = %d',msgStart,N);
     end
     
     function verifyDidNotOverwritePlots(testCase,nvar,pos,msg)

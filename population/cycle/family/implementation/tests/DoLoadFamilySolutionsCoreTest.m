@@ -11,13 +11,13 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
   methods (TestMethodSetup)
     function setup(testCase)
       setup@LoadFamilyTestHelper(testCase);
-      testCase.familyName = 'family_p=1+0,5sin(2 pi x)';
+      testCase.familyName = 'family_p=1+0,5sin(2 pi x)\';
     end
   end
   
   methods (Access = private)
     function setupSimpleFamilyName(testCase)
-      testCase.familyName = 'family';
+      testCase.familyName = 'family\';
     end
   end
   
@@ -43,7 +43,7 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
       testCase.dirname = 'dir\';
       testCase.act();
       testCase.verifyEqual(testCase.namePassedInToDir,...
-        'dir\solution_results\family_*.mat',...
+        'dir\solution_results\family\*.mat',...
         'Не получены имена файлов с решениями семейства');
     end
     
@@ -51,15 +51,15 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
       testCase.setupSimpleFamilyName();
       
       folder = struct;
-      folder.name = 'family_0.mat';
+      folder.name = '0.mat';
       folder.isdir = false;
       file = struct;
-      file.name = 'family_1.mat';
+      file.name = '1.mat';
       file.isdir = true;
       testCase.listing = [folder,file];
             
       loadedVars = struct;
-      loadedVars.filename = 'solution_results\family_0.mat';
+      loadedVars.filename = 'solution_results\family\0.mat';
       vars = struct;
       t = zeros(1,20);
       vars.t = t;
@@ -72,7 +72,7 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
       testCase.act();      
       testCase.verifyTrue(isempty(find(strcmp(...
         testCase.filenamesPassedInToLoad,...
-        'solution_results\family_1.mat'),1)),...
+        'solution_results\family\1.mat'),1)),...
         'Попытка загрузить решение из папки');
     end
     
@@ -83,12 +83,12 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
       foreignFile.name = 'foreign_file.mat';
       foreignFile.isdir = false;
       familyFile = struct;
-      familyFile.name = 'family_0.mat';
+      familyFile.name = '0.mat';
       familyFile.isdir = false;
       testCase.listing = [foreignFile,familyFile];
       
       loadedVars = struct;
-      loadedVars.filename = 'solution_results\family_0.mat';
+      loadedVars.filename = 'solution_results\family\0.mat';
       vars = struct;
       t = zeros(1,20);
       vars.t = t;
@@ -106,19 +106,19 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
     end
 
     function testReturnsLoadedSolutionsInRightOrder(testCase)    
-      testCase.familyName = 'family_p=1+0,5sin(2 pi x)';
+      testCase.familyName = 'family_p=1+0,5sin(2 pi x)\';
       
       file2 = struct;
-      file2.name = 'family_p=1+0,5sin(2 pi x)_2.mat';
+      file2.name = '2.mat';
       file2.isdir = false;
       file10 = struct;
-      file10.name = 'family_p=1+0,5sin(2 pi x)_10.mat';
+      file10.name = '10.mat';
       file10.isdir = false;
       testCase.listing = [file10,file2];
       
       loadedVars = struct;
       loadedVars.filename = ...
-        'solution_results\family_p=1+0,5sin(2 pi x)_2.mat';
+        'solution_results\family_p=1+0,5sin(2 pi x)\2.mat';
       vars = struct;
       npt = 20;
       t2 = zeros(1,npt);
@@ -128,7 +128,7 @@ classdef DoLoadFamilySolutionsCoreTest < matlab.unittest.TestCase & ...
       testCase.varsToLoad = [testCase.varsToLoad,loadedVars];
       
       loadedVars.filename = ...
-        'solution_results\family_p=1+0,5sin(2 pi x)_10.mat';
+        'solution_results\family_p=1+0,5sin(2 pi x)\10.mat';
       t10 = ones(1,npt);
       vars.t = t10;
       loadedVars.vars = vars;

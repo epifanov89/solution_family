@@ -30,16 +30,20 @@ classdef PlotTestHelperBase < TestHelperBase
       testCase.argPassedInToClose = arg;
     end
         
-    function fakeLabel(varargin)
+    function h = fakeLabel(varargin)
+      h = [];
     end
 
-    function fakeXLabel(varargin)
+    function h = fakeXLabel(varargin)
+      h = [];
     end
 
-    function fakeYLabel(varargin)
+    function h = fakeYLabel(varargin)
+      h = [];
     end
     
-    function fakeZLabel(varargin)
+    function h = fakeZLabel(varargin)
+      h = [];
     end
     
     function h = fakeGCA(~)

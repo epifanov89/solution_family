@@ -3,14 +3,14 @@ function doPlotPredatorSpatiotemporalDistributionsCore(currentDirName,...
   subplot,plot3D,set,axis,xlabel,ylabel,zlabel )
 
 curDirName = currentDirName();
-loadedVarsA = load(strcat(curDirName,...
-  'solution_results\tillsteadyA.mat'),'t','w');
+famDirName = strcat(curDirName,...
+  'solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\');
+loadedVarsA = load(strcat(famDirName,'1.mat'),'t','w');
 
 tA = loadedVarsA.t;
 solA = loadedVarsA.w;
 
-loadedVarsB = load(strcat(curDirName,...
-  'solution_results\tillsteadyB.mat'),'t','w');
+loadedVarsB = load(strcat(famDirName,'9.mat'),'t','w');
 
 tB = loadedVarsB.t;
 solB = loadedVarsB.w;

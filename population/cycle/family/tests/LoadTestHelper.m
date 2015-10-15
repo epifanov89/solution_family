@@ -30,9 +30,6 @@ classdef LoadTestHelper < TestHelperBase
       testCase.verifyContainsItem(testCase.argsPassedInToLoad,args,...
         'Не загружены переменные из файла');
     end
-    
-    function act(~)
-    end
   end
   
 end

@@ -23,8 +23,30 @@ classdef TestHelperBase < matlab.unittest.TestCase
     
     function str = getMsg(~,msgStart,N)
       str = sprintf('%s при N = %d',msgStart,N);
+    end        
+    
+    function [ rightParts,linearizedSystem,resource,nprey,npredator ] = ...
+        fakeGetSystem(testCase,preyDiffusionCoeff,...
+          secondPredatorDiffusionCoeff,firstPredatorMortality,...
+          resourceDeviation,N)
+      testCase.isGetParamsCalled = true;
+      testCase.preyDiffusionCoeffPassedInToGetParams = preyDiffusionCoeff;
+      testCase.secondPredatorDiffusionCoeffPassedInToGetParams = ...
+        secondPredatorDiffusionCoeff;
+      testCase.firstPredatorMortalityPassedInToGetParams = ...
+        firstPredatorMortality;
+      testCase.resourceDeviationPassedInToGetParams = ...
+        resourceDeviation;
+      testCase.NPassedInToGetParams = N;
+      
+      rightParts = testCase.rightParts;
+      linearizedSystem = testCase.linearizedSystem;
+      resource = testCase.resource;
+
+      nprey = testCase.nprey;
+      npredator = testCase.npredator;
     end
-        
+    
     function act(~)
     end
   end

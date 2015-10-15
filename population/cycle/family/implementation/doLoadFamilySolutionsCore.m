@@ -3,7 +3,8 @@ function solutions = doLoadFamilySolutionsCore( currentDirName,dir,...
 
 curDirName = currentDirName();
 solutionResultsDirname = strcat(curDirName,'solution_results\');
-listing = dir(strcat(solutionResultsDirname,familyName,'_*.mat'));
+famDirName = strcat(solutionResultsDirname,familyName);
+listing = dir(strcat(famDirName,'*.mat'));
 
 % Отбрасываем папки
 files = listing(arrayfun(@(entry) ~entry.isdir,listing));
@@ -14,9 +15,7 @@ if ~isempty(files)
   filenames = {files(:).name};
 
   % Выбираем только файлы с результатами решений семейства
-  escapedFamilyName = regexptranslate('escape',familyName);
-  [tokens,matches] = regexp(filenames,...
-    strcat(escapedFamilyName,'_(\d+).mat'),'tokens','match');
+  [tokens,matches] = regexp(filenames,'(\d+).mat','tokens','match');
 
   ntoken = length(tokens);
   numTokens = zeros(1,ntoken);
@@ -35,8 +34,8 @@ if ~isempty(files)
   while matchIndex <= length(sortedMatches)
     match = sortedMatches{matchIndex};
     if ~isempty(match)
-      solutions = [solutions,load(strcat(solutionResultsDirname,...
-        match{1}),varargin{:})];
+      solutions = [solutions,...
+        load(strcat(famDirName,match{1}),varargin{:})];
     end
     matchIndex = matchIndex+1;
   end

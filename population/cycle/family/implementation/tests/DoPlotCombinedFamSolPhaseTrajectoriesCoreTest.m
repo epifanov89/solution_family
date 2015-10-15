@@ -4,12 +4,13 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
   
   properties
     npt
-    argsPassedInToPlot3
+    plottedPoints
   end
   
   methods (TestMethodSetup)
     function setup(testCase)
-      testCase.npt = 200;
+      testCase.npt = 200;      
+      testCase.plottedLines = {};
     end
   end
   
@@ -38,66 +39,46 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
       
       solNo = 0;
       filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\0.mat';
+        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\4.mat';
       setupSol();
       
       solNo = 1;
       filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\1.mat';
+        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\5.mat';
       setupSol();
       
       solNo = 2;
       filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\2.mat';
+        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\6.mat';
       setupSol();
       
       solNo = 3;
       filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\3.mat';
+        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\7.mat';
       setupSol();
       
       solNo = 4;
       filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\4.mat';
+        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\8.mat';
       setupSol();
       
       solNo = 5;
       filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\5.mat';
-      setupSol();
-      
-      solNo = 6;
-      filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\6.mat';
-      setupSol();
-      
-      solNo = 7;
-      filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\7.mat';
-      setupSol();
-      
-      solNo = 8;
-      filename = ...
-        'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\8.mat';
-      setupSol();
-      
-      solNo = 9;
-      filename = ...
         'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\9.mat';
       setupSol();
       
-      solNo = 10;
+      solNo = 6;
       filename = ...
         'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.2\10.mat';
       setupSol();
       
       nfamvar = testCase.getNFamVar(nvar);
          
-      solNo = 7;
+      solNo = 3;
       offset = nfamvar;
       setupSolPtsWithExtremeVarVals();
       
-      for solNo = 8:10
+      for solNo = 4:6
         setupSolPtsWithExtremeVarVals();
       end
       
@@ -162,15 +143,28 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
       rowIndex = [];
     end    
     
-    function fakePlot3(testCase,X,Y,Z,varargin)
-      args = struct;
-      args.X = X;
-      args.Y = Y;
-      args.Z = Z;
-      testCase.argsPassedInToPlot3 = [testCase.argsPassedInToPlot3,args];
+    function h = fakePlot3(testCase,X,Y,Z,LineSpec,varargin)     
+      npt = length(X);
+      isptplot = ~isempty(strfind(LineSpec,'o'));
+      islineplot = ~isptplot || ~isempty(strfind(LineSpec,'-'));      
+      ndim = 3;
+      line = zeros(npt,ndim);
+      for pointIndex = 1:npt
+        pt = [X(pointIndex),Y(pointIndex),Z(pointIndex)];
+        if islineplot
+          line(pointIndex,:) = pt;
+        end
+        if isptplot
+          testCase.plottedPoints = [testCase.plottedPoints,pt];
+        end
+      end
+      
+      testCase.plottedLines = [testCase.plottedLines,line];
       
       callInfo = testCase.processPlotCall();
       testCase.callSequence = [testCase.callSequence,callInfo];
+      
+      h = [];
     end
     
     function sol = getSol(testCase,solNo,nvar)
@@ -205,39 +199,63 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
     function verifyCyclePlotted(testCase,solNo,N,nvar,...
         preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex,msgStart)
-      nplotpt = 100;
-      testCase.verifySolPlotted(solNo,nplotpt,N,nvar,...
+      testCase.setupFam(nvar,preyCenterPointVarIndex,...
+        firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex);
+      testCase.dirname = 'dir\';      
+      testCase.act();
+      nplotpt = 100;      
+      offset = (testCase.npt*(solNo+1)-nplotpt)*nvar;     
+      ndim = 3;
+      line = zeros(nplotpt,ndim);
+      for row = 1:nplotpt
+        rowOffset = offset+(row-1)*nvar;
+        line(row,1) = rowOffset+preyCenterPointVarIndex;
+        line(row,2) = rowOffset+firstPredatorCenterPointVarIndex;
+        line(row,3) = rowOffset+secondPredatorCenterPointVarIndex;
+      end
+      testCase.verifyContainsItem(testCase.plottedLines,line,...
+        testCase.getMsg(msgStart,N));
+    end
+    
+    function verifyEquilibriumPlottedForNEqualTo3(testCase,solNo,msgStart)
+      N = 3;
+      [nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+          secondPredatorCenterPointVarIndex] = ...
+        testCase.getVarNumberAndIndicesForNEqualTo3();
+      testCase.verifyEquilibriumPlotted(solNo,N,nvar,...
         preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex,msgStart);
     end
     
-    function verifySolPlotted(testCase,solNo,nplotpt,N,nvar,...
+    function verifyEquilibriumPlottedForNEqualTo4(testCase,solNo,msgStart)
+      N = 4;
+      [nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+          secondPredatorCenterPointVarIndex] = ...
+        testCase.getVarNumberAndIndicesForNEqualTo4();
+      testCase.verifyEquilibriumPlotted(solNo,N,nvar,...
+        preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex,msgStart);
+    end
+    
+    function verifyEquilibriumPlotted(testCase,solNo,N,nvar,...
         preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex,msgStart)
       testCase.setupFam(nvar,preyCenterPointVarIndex,...
         firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex);
       testCase.dirname = 'dir\';      
-      testCase.act();
-      expArgs = struct;
-      offset = (testCase.npt*(solNo+1)-nplotpt)*nvar;     
-      X = zeros(nplotpt,1);
-      Y = zeros(nplotpt,1);
-      Z = zeros(nplotpt,1);
-      for row = 1:nplotpt
-        rowOffset = offset+(row-1)*nvar;
-        X(row) = rowOffset+preyCenterPointVarIndex;
-        Y(row) = rowOffset+firstPredatorCenterPointVarIndex;
-        Z(row) = rowOffset+secondPredatorCenterPointVarIndex;
-      end
-      expArgs.X = X;
-      expArgs.Y = Y;
-      expArgs.Z = Z;
-      testCase.verifyContainsItem(testCase.argsPassedInToPlot3,expArgs,...
+      testCase.plottedPoints = {};
+      testCase.act();    
+      offset = (testCase.npt*(solNo+1)-1)*nvar;     
+      pt = [offset+preyCenterPointVarIndex,...
+        offset+firstPredatorCenterPointVarIndex,...
+        offset+secondPredatorCenterPointVarIndex];
+      testCase.verifyContainsItem(testCase.plottedPoints,pt,...
         testCase.getMsg(msgStart,N));
     end
     
-    function verifyEquilibriaPlotted(testCase,N,nvar,...
+    function verifyLineConnectingEquilibriaPlotted(testCase,N,nvar,...
         preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex)
       testCase.setupFam(nvar,preyCenterPointVarIndex,...
@@ -246,23 +264,19 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
       
       testCase.act();
       
-      args = struct;
-      nequilibrium = 7;
+      nequilibrium = 3;
       offset = (testCase.npt-1)*nvar;
-      X = zeros(1,nequilibrium);
-      Y = zeros(1,nequilibrium);
-      Z = zeros(1,nequilibrium);
+      ndim = 3;
+      line = zeros(nequilibrium,ndim);
       for pt = 1:nequilibrium
         ptOffset = offset+(pt-1)*testCase.npt*nvar;
-        X(pt) = ptOffset+preyCenterPointVarIndex;
-        Y(pt) = ptOffset+firstPredatorCenterPointVarIndex;
-        Z(pt) = ptOffset+secondPredatorCenterPointVarIndex;
+        line(pt,1) = ptOffset+preyCenterPointVarIndex;
+        line(pt,2) = ptOffset+firstPredatorCenterPointVarIndex;
+        line(pt,3) = ptOffset+secondPredatorCenterPointVarIndex;
       end
-      args.X = X;
-      args.Y = Y;
-      args.Z = Z;
-      testCase.verifyContainsItem(testCase.argsPassedInToPlot3,args,...
-        testCase.getMsg('Ќе выведены равновеси€ семейства',N));      
+      testCase.verifyContainsItem(testCase.plottedLines,line,...
+        testCase.getMsg(...
+          'Ќе выведена лини€, соедин€юща€ равновеси€ семейства',N));      
     end
     
     function verifyFamAxisPlotted(testCase,N,nvar,...
@@ -274,32 +288,71 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
       
       testCase.act();
             
-      args = struct;
       nDashedLineConnectedPt = 5;
+      
+      ndim = 3;
+      line = zeros(nDashedLineConnectedPt,ndim);
+      
+      equilibriumNo = 2;
+      offset = equilibriumNo*testCase.npt*nvar+(testCase.npt-1)*nvar;
+      line(1,1) = offset+preyCenterPointVarIndex;
+      line(1,2) = offset+firstPredatorCenterPointVarIndex;
+      line(1,3) = offset+secondPredatorCenterPointVarIndex;
+      
       nfamvar = testCase.getNFamVar(nvar);
       offset = nfamvar+nvar;
-      X = zeros(1,nDashedLineConnectedPt);
-      Y = zeros(1,nDashedLineConnectedPt);
-      Z = zeros(1,nDashedLineConnectedPt);
-      for pt = 1:nDashedLineConnectedPt-1
-        X(pt) = offset+preyCenterPointVarIndex;
-        offset = offset+3*nvar;
-        Y(pt) = offset+firstPredatorCenterPointVarIndex;
-        offset = offset+3*nvar;
-        Z(pt) = offset+secondPredatorCenterPointVarIndex;
-        offset = offset+3*nvar;
+      cycleDimMeanOffset = 3*nvar;
+      for pt = 2:nDashedLineConnectedPt
+        line(pt,1) = offset+preyCenterPointVarIndex;
+        offset = offset+cycleDimMeanOffset;
+        line(pt,2) = offset+firstPredatorCenterPointVarIndex;
+        offset = offset+cycleDimMeanOffset;
+        line(pt,3) = offset+secondPredatorCenterPointVarIndex;
+        offset = offset+cycleDimMeanOffset;
       end
-      equilibriumNo = 6;
-      offset = equilibriumNo*testCase.npt*nvar+(testCase.npt-1)*nvar;
-      X(nDashedLineConnectedPt) = offset+preyCenterPointVarIndex;
-      Y(nDashedLineConnectedPt) = offset+firstPredatorCenterPointVarIndex;
-      Z(nDashedLineConnectedPt) = offset+secondPredatorCenterPointVarIndex;
       
-      args.X = X;
-      args.Y = Y;
-      args.Z = Z;
-      testCase.verifyContainsItem(testCase.argsPassedInToPlot3,args,...
+      testCase.verifyContainsItem(testCase.plottedLines,line,...
         testCase.getMsg('Ќе выведена ось циклов семейства',N));
+    end
+    
+    function verifyCycleMeanValPlottedForNEqualTo3(testCase,cycleNo,...
+        msgStart)
+      N = 3;
+      [nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+          secondPredatorCenterPointVarIndex] = ...
+        testCase.getVarNumberAndIndicesForNEqualTo3();
+      testCase.verifyCycleMeanValPlotted(cycleNo,N,nvar,...
+        preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex,msgStart);   
+    end
+    
+    function verifyCycleMeanValPlottedForNEqualTo4(testCase,cycleNo,...
+        msgStart)
+      N = 4;
+      [nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+          secondPredatorCenterPointVarIndex] = ...
+        testCase.getVarNumberAndIndicesForNEqualTo4();
+      testCase.verifyCycleMeanValPlotted(cycleNo,N,nvar,...
+        preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex,msgStart);   
+    end
+    
+    function verifyCycleMeanValPlotted(testCase,cycleNo,N,nvar,...
+        preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex,msgStart)         
+      testCase.setupFam(nvar,preyCenterPointVarIndex,...
+        firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex);
+      testCase.plottedPoints = {};
+      testCase.act();
+      nfamvar = testCase.getNFamVar(nvar);
+      ndim = 3;
+      offset = nfamvar+nvar+cycleNo*3*ndim*nvar;
+      pt = [offset+preyCenterPointVarIndex,...
+        offset+3*nvar+firstPredatorCenterPointVarIndex,...
+        offset+6*nvar+secondPredatorCenterPointVarIndex];
+      testCase.verifyContainsItem(testCase.plottedPoints,pt,...
+        testCase.getMsg(msgStart,N));
     end
       
     function [nvar,preyCenterPointVarIndex,...
@@ -337,78 +390,162 @@ classdef DoPlotCombinedFamSolPhaseTrajectoriesCoreTest < ...
       doPlotCombinedFamSolPhaseTrajectoriesCore(...
         @testCase.fakeCurrentDirName,@testCase.fakeLoad,...
         @testCase.fakeGetLastRowWithExtremeElementValue,...
-        @testCase.fakePlot3,@testCase.fakeHold,@testCase.fakeXLabel,...
-        @testCase.fakeYLabel,@testCase.fakeZLabel,@testCase.fakeGCA,...
-        @testCase.fakeSet);
+        @testCase.fakePlot3,@testCase.fakeHold,@testCase.fakeLabel,...
+        @testCase.fakeXLabel,@testCase.fakeYLabel,@testCase.fakeZLabel,...
+        @testCase.fakeGCA,@testCase.fakeSet);
     end
   end
   
   methods (Test)    
-    function testPlotsFamSol7TrajectoryForNEqualTo3(testCase)
-      solNo = 7;
-      testCase.verifyCyclePlottedForNEqualTo3(solNo,...
-        'Ќе выведено восьмое решение семейства');
+    function testPlotsSol5LastPtForNEqualTo3(testCase)
+      solNo = 0;
+      testCase.verifyEquilibriumPlottedForNEqualTo3(solNo,...
+        'Ќе выведено п€тое решение семейства');
     end
     
-    function testPlotsFamSol7TrajectoryForNEqualTo4(testCase)
-      solNo = 7;
-      testCase.verifyCyclePlottedForNEqualTo4(solNo,...
-        'Ќе выведено восьмое решение семейства');
+    function testPlotsSol5LastPtForNEqualTo4(testCase)
+      solNo = 0;
+      testCase.verifyEquilibriumPlottedForNEqualTo4(solNo,...
+        'Ќе выведено п€тое решение семейства');
+    end
+    
+    function testPlotsSol6LastPtForNEqualTo3(testCase)
+      solNo = 1;
+      testCase.verifyEquilibriumPlottedForNEqualTo3(solNo,...
+        'Ќе выведено шестое решение семейства');
+    end
+    
+    function testPlotsSol6LastPtForNEqualTo4(testCase)
+      solNo = 1;
+      testCase.verifyEquilibriumPlottedForNEqualTo4(solNo,...
+        'Ќе выведено шестое решение семейства');
+    end
+    
+    function testPlotsSol7LastPtForNEqualTo3(testCase)
+      solNo = 2;
+      testCase.verifyEquilibriumPlottedForNEqualTo3(solNo,...
+        'Ќе выведено седьмое решение семейства');
+    end
+    
+    function testPlotsSol7LastPtForNEqualTo4(testCase)
+      solNo = 2;
+      testCase.verifyEquilibriumPlottedForNEqualTo4(solNo,...
+        'Ќе выведено седьмое решение семейства');
     end
     
     function testPlotsFamSol8TrajectoryForNEqualTo3(testCase)
-      solNo = 8;
+      solNo = 3;
       testCase.verifyCyclePlottedForNEqualTo3(solNo,...
-        'Ќе выведено дев€тое решение семейства');
+        'Ќе выведено восьмое решение семейства');
     end
     
     function testPlotsFamSol8TrajectoryForNEqualTo4(testCase)
-      solNo = 8;
+      solNo = 3;
+      testCase.verifyCyclePlottedForNEqualTo4(solNo,...
+        'Ќе выведено восьмое решение семейства');
+    end
+    
+    function testPlotsCycle1MeanValForNEqualTo3(testCase)
+      cycleNo = 0;
+      testCase.verifyCycleMeanValPlottedForNEqualTo3(cycleNo,...
+        'Ќе выведена средн€€ точка 1-го цикла семейства');
+    end
+    
+    function testPlotsCycle1MeanValForNEqualTo4(testCase)
+      cycleNo = 0;
+      testCase.verifyCycleMeanValPlottedForNEqualTo4(cycleNo,...
+        'Ќе выведена средн€€ точка 1-го цикла семейства');
+    end
+    
+    function testPlotsCycle2MeanValForNEqualTo3(testCase)
+      cycleNo = 1;
+      testCase.verifyCycleMeanValPlottedForNEqualTo3(cycleNo,...
+        'Ќе выведена средн€€ точка 2-го цикла семейства');
+    end
+    
+    function testPlotsCycle2MeanValForNEqualTo4(testCase)
+      cycleNo = 1;
+      testCase.verifyCycleMeanValPlottedForNEqualTo4(cycleNo,...
+        'Ќе выведена средн€€ точка 2-го цикла семейства');
+    end
+    
+    function testPlotsCycle3MeanValForNEqualTo3(testCase)
+      cycleNo = 2;
+      testCase.verifyCycleMeanValPlottedForNEqualTo3(cycleNo,...
+        'Ќе выведена средн€€ точка 3-го цикла семейства');
+    end
+    
+    function testPlotsCycle3MeanValForNEqualTo4(testCase)
+      cycleNo = 2;
+      testCase.verifyCycleMeanValPlottedForNEqualTo4(cycleNo,...
+        'Ќе выведена средн€€ точка 3-го цикла семейства');
+    end
+    
+    function testPlotsCycle4MeanValForNEqualTo3(testCase)
+      cycleNo = 3;
+      testCase.verifyCycleMeanValPlottedForNEqualTo3(cycleNo,...
+        'Ќе выведена средн€€ точка 4-го цикла семейства');
+    end
+    
+    function testPlotsCycle4MeanValForNEqualTo4(testCase)
+      cycleNo = 3;
+      testCase.verifyCycleMeanValPlottedForNEqualTo4(cycleNo,...
+        'Ќе выведена средн€€ точка 4-го цикла семейства');
+    end
+    
+    function testPlotsFamSol9TrajectoryForNEqualTo3(testCase)
+      solNo = 4;
+      testCase.verifyCyclePlottedForNEqualTo3(solNo,...
+        'Ќе выведено дев€тое решение семейства');
+    end
+    
+    function testPlotsFamSol9TrajectoryForNEqualTo4(testCase)
+      solNo = 4;
       testCase.verifyCyclePlottedForNEqualTo4(solNo,...
         'Ќе выведено дев€тое решение семейства');
     end
     
-    function testPlotsFamSol9TrajectoryForNEqualTo3(testCase)
-      solNo = 9;
-      testCase.verifyCyclePlottedForNEqualTo3(solNo,...
-        'Ќе выведено дес€тое решение семейства');
-    end
-    
-    function testPlotsFamSol9TrajectoryForNEqualTo4(testCase)
-      solNo = 9;
-      testCase.verifyCyclePlottedForNEqualTo4(solNo,...
-        'Ќе выведено дес€тое решение семейства');
-    end
-    
     function testPlotsFamSol10TrajectoryForNEqualTo3(testCase)
-      solNo = 10;
+      solNo = 5;
       testCase.verifyCyclePlottedForNEqualTo3(solNo,...
-        'Ќе выведено одиннадцатое решение семейства');
+        'Ќе выведено дес€тое решение семейства');
     end
     
     function testPlotsFamSol10TrajectoryForNEqualTo4(testCase)
-      solNo = 10;
+      solNo = 5;
+      testCase.verifyCyclePlottedForNEqualTo4(solNo,...
+        'Ќе выведено дес€тое решение семейства');
+    end
+    
+    function testPlotsFamSol11TrajectoryForNEqualTo3(testCase)
+      solNo = 6;
+      testCase.verifyCyclePlottedForNEqualTo3(solNo,...
+        'Ќе выведено одиннадцатое решение семейства');
+    end
+    
+    function testPlotsFamSol11TrajectoryForNEqualTo4(testCase)
+      solNo = 6;
       testCase.verifyCyclePlottedForNEqualTo4(solNo,...
         'Ќе выведено одиннадцатое решение семейства');
     end
     
-    function testPlotsEquilibriaForNEqualTo3(testCase)
+    function testPlotsLineConnectingEquilibriaForNEqualTo3(testCase)
       N = 3;
       [nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
           secondPredatorCenterPointVarIndex] = ...
         testCase.getVarNumberAndIndicesForNEqualTo3();
-      testCase.verifyEquilibriaPlotted(N,nvar,preyCenterPointVarIndex,...
-        firstPredatorCenterPointVarIndex,...
+      testCase.verifyLineConnectingEquilibriaPlotted(N,nvar,...
+        preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex);
     end
     
-    function testPlotsEquilibriaForNEqualTo4(testCase)
+    function testPlotsLineConnectingEquilibriaForNEqualTo4(testCase)
       N = 4;
       [nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
           secondPredatorCenterPointVarIndex] = ...
         testCase.getVarNumberAndIndicesForNEqualTo4();
-      testCase.verifyEquilibriaPlotted(N,nvar,preyCenterPointVarIndex,...
-        firstPredatorCenterPointVarIndex,...
+      testCase.verifyLineConnectingEquilibriaPlotted(N,nvar,...
+        preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex);
     end
     

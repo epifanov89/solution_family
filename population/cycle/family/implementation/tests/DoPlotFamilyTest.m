@@ -7,20 +7,20 @@ classdef DoPlotFamilyTest < matlab.unittest.TestCase
     passedInLoadVars
     passedInGetLastRowWithExtremeElementValue
     passedInGetSolutionPartForTrajectoryPlot
-    passedInSubplot
     passedInPlot
     passedInHold
     passedInLabel
     passedInXLabel
     passedInYLabel
+    passedInGCA
     passedInSet
   end
   
   methods
     function fakeFcnToPassIn(testCase,getMFilename,...
         getFileDirname,dir,loadVars,getLastRowWithExtremeElementValue,...
-        getSolutionPartForTrajectoryPlot,subplot,plot,hold,label,...
-        xlabel,ylabel,set)
+        getSolutionPartForTrajectoryPlot,plot,hold,label,xlabel,ylabel,...
+        gca,set)
       testCase.passedInGetMFilename = getMFilename;
       testCase.passedInGetFileDirname = getFileDirname;
       testCase.passedInDir = dir;
@@ -29,12 +29,12 @@ classdef DoPlotFamilyTest < matlab.unittest.TestCase
         getLastRowWithExtremeElementValue;
       testCase.passedInGetSolutionPartForTrajectoryPlot = ...
         getSolutionPartForTrajectoryPlot;
-      testCase.passedInSubplot = subplot;
       testCase.passedInPlot = plot;
       testCase.passedInHold = hold;
       testCase.passedInLabel = label;
       testCase.passedInXLabel = xlabel;
       testCase.passedInYLabel = ylabel;
+      testCase.passedInGCA = gca;
       testCase.passedInSet = set;
     end
     
@@ -85,13 +85,6 @@ classdef DoPlotFamilyTest < matlab.unittest.TestCase
         @getSolutionTillMinFirstPredatorDensity,...
         'Передана неправильная функция получения части решения для вывода его траектории');
     end
-       
-    function testPassesSubplotToPassedInFunction(testCase)
-      testCase.act();
-      testCase.verifyEqual(...
-        testCase.passedInSubplot,@subplot,...
-        'Передана неправильная функция создания области рисунка');
-    end 
     
     function testPassesPlotToPassedInFunction(testCase)
       testCase.act();
@@ -126,6 +119,13 @@ classdef DoPlotFamilyTest < matlab.unittest.TestCase
       testCase.verifyEqual(...
         testCase.passedInYLabel,@ylabel,...
         'Передана неправильная функция создания подписи оси ординат');
+    end
+    
+    function testPassesGCAToPassedInFunction(testCase)
+      testCase.act();
+      testCase.verifyEqual(...
+        testCase.passedInGCA,@gca,...
+        'Передана неправильная функция получения указателя текущих осей');
     end
     
     function testPassesSetToPassedInFunction(testCase)

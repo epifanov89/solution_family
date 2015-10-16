@@ -49,6 +49,8 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
     firstPredatorMortalityPassedInToGetParams
     resourceDeviationPassedInToGetParams
     NPassedInToGetParams
+    
+    isStopped
   end
   
   methods (TestMethodSetup)
@@ -182,8 +184,8 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
     end
     
     function act(testCase)
-      doSolveOneCore(testCase.solutionResultsFilename,...
-        testCase.preyDiffusionCoeff,...
+      testCase.isStopped = doSolveOneCore(...
+        testCase.solutionResultsFilename,testCase.preyDiffusionCoeff,...
         testCase.secondPredatorDiffusionCoeff,...
         testCase.firstPredatorMortality,testCase.resourceDeviation,...
         testCase.N,testCase.tspan,@testCase.fakeGetInitialData,...
@@ -444,7 +446,7 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
         'ѕередан неправильный индекс второй выводимой переменной, когда плотность первой попул€ции хищников равна нулю');
     end    
     
-    function testCreatesSolutionResultsDirIfItDoesNotExistYet(testCase)
+    function testCreatesSolutionResultsDirIfItHasNotExistedYet(testCase)
       testCase.dir = 'dir\';
       testCase.existent = struct;
       testCase.existent.('dir') = [];
@@ -455,7 +457,7 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
         'Ќе создана папка с промежуточными результатами решени€');
     end
     
-    function testDoesNotAttemptToCreateSolutionResultsDirIfItAlreadyExists(testCase)
+    function testDoesNotAttemptToCreateSolutionResultsDirIfItHasExistAlready(testCase)
       testCase.dir = 'dir\';
       testCase.existent = struct;
       testCase.existent.('dir') = 'dir\solution_results\';
@@ -481,6 +483,19 @@ classdef DoSolveOneCoreTest < matlab.unittest.TestCase
       testCase.verifyFalse(isempty(find(arrayfun(...
         @(s) isequal(s,saved),testCase.savedVars),1)),...
         'Ќе сохранено решение');
+    end
+    
+    function testReturnsIsStoppedIfDidNotReachTFinish(testCase)
+      testCase.act();
+      testCase.verifyTrue(testCase.isStopped,...
+        'Ќе возвращено, что процесс решени€ был прерван, когда не достигнут конечный момент времени интегрировани€');
+    end
+    
+    function testReturnsIsNotStoppedIfReachedTFinish(testCase)
+      testCase.t = [2 50]';
+      testCase.act();
+      testCase.verifyFalse(testCase.isStopped,...
+        '¬озвращено, что процесс решени€ был прерван, хот€ конечный момент времени интегрировани€ достигнут');
     end
   end
   

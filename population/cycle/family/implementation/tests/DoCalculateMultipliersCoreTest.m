@@ -1,6 +1,6 @@
 classdef DoCalculateMultipliersCoreTest < ...
     MFilenameAndGetFileDirnameTestBase & LoadTestHelper...
-    & SaveVarsTestHelper & GetSystemTestHelper
+    & SaveVarsTestHelper
   
   properties
     solutionResultsFilename
@@ -10,7 +10,13 @@ classdef DoCalculateMultipliersCoreTest < ...
     filenamePassedInToGetResultsFilenameForMFile
     dirnamePassedInToGetResultsFilenameForMFile      
     monodromyMatrixFilename    
-        
+      
+    preyDiffusionCoeff
+    secondPredatorDiffusionCoeff
+    firstPredatorMortality
+    resourceVariation
+    N
+    
     isGetPoincareMapLastPointCalled
     solPassedInToGetPoincareMapLastPoint
     fixedVarIndexPassedInToGetPoincareMapLastPoint
@@ -120,10 +126,6 @@ classdef DoCalculateMultipliersCoreTest < ...
     function fakePrint(testCase,varargin)
       testCase.printedValsArray = [testCase.printedValsArray,varargin];
     end
-    
-    function fakeDisp(testCase,val)
-      testCase.displayedValsArray = [testCase.displayedValsArray,val];
-    end
   end
   
   methods (Access = protected)
@@ -131,12 +133,12 @@ classdef DoCalculateMultipliersCoreTest < ...
       doCalculateMultipliersCore(testCase.solutionResultsFilename,...
         testCase.preyDiffusionCoeff,...
         testCase.secondPredatorDiffusionCoeff,...
-        testCase.firstPredatorMortality,testCase.resourceDeviation,...
+        testCase.firstPredatorMortality,testCase.resourceVariation,...
         @testCase.fakeMFilename,@testCase.fakeGetFileDirname,...
         @testCase.fakeGetResultsFilenameForMFile,@testCase.fakeExist,...
         @testCase.fakeLoad,@testCase.fakeMakeDir,@testCase.fakeSave,...
         @testCase.fakeGetPoincareMapLastPoint,@testCase.fakeGetPeriod,...
-        @testCase.fakeParams,@testCase.fakeCalculateMultipliers,...
+        @testCase.fakeGetSystem,@testCase.fakeCalculateMultipliers,...
         testCase.solver,@testCase.fakePrint,@testCase.fakeDisp);
     end
   end
@@ -270,12 +272,17 @@ classdef DoCalculateMultipliersCoreTest < ...
         'В функцию получения пути к файлу результатов, одноименному m-файлу, передано неправильное имя папки');
     end
     
-    function testGetsParams(testCase)
-      N = 5;
+    function testGetsSystem(testCase)      
       testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
-      testCase.verifyGetsParams();
-      testCase.verifyEqual(testCase.NPassedInToGetParams,N,...
-        'В функцию получения параметров передано неправильное число точек сетки');
+      testCase.preyDiffusionCoeff = 1;
+      testCase.secondPredatorDiffusionCoeff = 2;
+      testCase.firstPredatorMortality = 3;
+      testCase.resourceVariation = 4;
+      testCase.N = 5;
+      testCase.verifyGetsSystem(testCase.preyDiffusionCoeff,...
+        testCase.secondPredatorDiffusionCoeff,...
+        testCase.firstPredatorMortality,testCase.resourceVariation,...
+        testCase.N);
     end
     
     function testGetsPoincareMapLastPoint(testCase)
@@ -425,11 +432,10 @@ classdef DoCalculateMultipliersCoreTest < ...
     
     function testDisplaysMultipliersIfTheyAreComputed(testCase)
       testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
-      testCase.multipliers = [0 1];
+      testCase.multipliers = {0 1};
       testCase.printedValsArray = {};
-      testCase.act();
-      testCase.verifyEqual(testCase.displayedValsArray,...
-        testCase.multipliers,'Не выведены мультипликаторы');
+      testCase.verifyDisplayed(testCase.multipliers,...
+        'Не выведены мультипликаторы');
     end
     
     function testCreatesMultipliersFolderIfMultipliersAreComputed(testCase)

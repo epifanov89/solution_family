@@ -74,7 +74,7 @@ classdef DoCalculateEigsCoreTest < FakeCurrentDirNameHelper...
     
     function testDisplaysEigsSortedByRealPart(testCase)
       testCase.eigArr = [0+2i 1+1i];
-      expEigArr = [1+1i 0+2i];
+      expEigArr = {[1+1i 0+2i]};
       testCase.verifyDisplayed(expEigArr,...
         'Не выведены СЗ, упорядоченные по убыванию действительной части');
     end

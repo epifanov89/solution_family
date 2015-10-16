@@ -44,4 +44,6 @@ fullSuite = [fullSuite,TestSuite.fromClass(...
   ?DoPlotCombinedFamSolPhaseTrajectoriesCoreTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(...
   ?DoPlotCombinedFamSolPhaseTrajectoriesTest)];
+fullSuite = [fullSuite,TestSuite.fromClass(?DoCalculateEigsCoreTest)];
+fullSuite = [fullSuite,TestSuite.fromClass(?DoCalculateEigsTest)];
 result = run(fullSuite)

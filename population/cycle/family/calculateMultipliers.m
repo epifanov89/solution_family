@@ -1,10 +1,10 @@
 function calculateMultipliers()
 
-resultsFilename = 'blablabla.mat';
+resultsFilename = 'families\p=1+0.5sin(2 pi x)\l2=1.2\7.mat';
 preyDiffusionCoeff = 0.2;
 secondPredatorDiffusionCoeff = 0.24;
-firstPredatorMortality = 1;
-resourceDeviation = 0.2;
+firstPredatorMortality = 1.2;
+resourceDeviation = 0.5;
 
 doCalculateMultipliers(@doCalculateMultipliersCore,resultsFilename,...
   preyDiffusionCoeff,secondPredatorDiffusionCoeff,...

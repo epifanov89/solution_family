@@ -49,34 +49,34 @@ fixedVarValue = 0.5;
 periodA = getPeriod(tA,solA,fixedVarIndex,fixedVarValue);
 periodB = getPeriod(tB,solB,fixedVarIndex,fixedVarValue);
 
-tspan = max(periodA,periodB);
+tspan = 1.5*min(periodA,periodB);
 
-[tperiodA,wperiodA] = getSolutionPart(tA,solA,...
+[tplotA,wplotA] = getSolutionPart(tA,solA,...
   preLastPointWithMinPreyDensityIndexA,tspan);
 
-[tperiodB,wperiodB] = getSolutionPart(tB,solB,...
+[tplotB,wplotB] = getSolutionPart(tB,solB,...
   preLastPointWithMinPreyDensityIndexB,tspan);
 
-[tperiodSparseA,wperiodSparseA] = sparseSolution(tperiodA,wperiodA);
+[tplotSparseA,wplotSparseA] = sparseSolution(tplotA,wplotA);
 
-[tperiodSparseB,wperiodSparseB] = sparseSolution(tperiodB,wperiodB);
+[tplotSparseB,wplotSparseB] = sparseSolution(tplotB,wplotB);
 
 X = linspace(0,1,N+1);
 
-maxDensity = max(maxMatrixElement(wperiodSparseA),...
-  maxMatrixElement(wperiodSparseB));
+maxDensity = max(maxMatrixElement(wplotSparseA),...
+  maxMatrixElement(wplotSparseB));
 
 pos = 1;
 
 species = 2;
-plotSpeciesDensity(tperiodSparseA,wperiodSparseA);
+plotSpeciesDensity(tplotSparseA,wplotSparseA);
 species = 2;
-plotSpeciesDensity(tperiodSparseB,wperiodSparseB);
+plotSpeciesDensity(tplotSparseB,wplotSparseB);
 
 species = 3;
-plotSpeciesDensity(tperiodSparseA,wperiodSparseA);
+plotSpeciesDensity(tplotSparseA,wplotSparseA);
 species = 3;
-plotSpeciesDensity(tperiodSparseB,wperiodSparseB);
+plotSpeciesDensity(tplotSparseB,wplotSparseB);
 
   function el = maxMatrixElement(matr)
     el = max(max(matr));

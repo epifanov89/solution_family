@@ -50,7 +50,7 @@ function [rho,computation_time] = multipliers_one_system_for_each_monodromy_matr
       fprintf('\b');
     end
     
-    if length(te) < 2
+    if isempty(te)
       err = true;
       break;
     end

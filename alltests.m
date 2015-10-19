@@ -13,7 +13,6 @@ fullSuite = [fullSuite,TestSuite.fromClass(?GetZeroSecondPredatorInitialDataTest
 fullSuite = [fullSuite,TestSuite.fromClass(?DoGetCombinedPredatorDensitiesInitialDataCoreTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?DoGetCombinedPredatorDensitiesInitialDataTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?GetSolutionTillMaxPredatorDensitiesTest)];
-fullSuite = [fullSuite,TestSuite.fromClass(?GetResultsFilenameForMFileTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?GetLastRowWithExtremeElementValueTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?GetFileDirnameTest)];
 fullSuite = [fullSuite,TestSuite.fromClass(?GetInitialDataToSolveTillSteadyTest)];

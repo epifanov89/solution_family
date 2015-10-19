@@ -26,21 +26,15 @@ preyCenterPointVarIndex = centerPointIndex;
 firstPredatorCenterPointVarIndex = N+centerPointIndex;
 secondPredatorCenterPointVarIndex = 2*N+centerPointIndex;
 
+preyCenterPointVarMinVal = min(w(:,preyCenterPointVarIndex));
+preyCenterPointVarMaxVal = max(w(:,preyCenterPointVarIndex));
+
 % Номер переменной, которая фигурирует в уравнении секущей плоскости
 % отображения Пуанкаре
 fixedVarIndex = preyCenterPointVarIndex;
 % Значение этой переменной в уравнении 
 % секущей плоскости отображения Пуанкаре
-fixedVarValue = 0.5;
-
-[rightPartsOfEquations,linearizedSystem,~,~,~,tstep] = getParams(...
-  preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
-  firstPredatorMortality,resourceDeviation,N);
-
-nvar = N*nspecies;
-
-% Номера переменных проективной плоскости для фазовых траекторий
-firstPhasVarIndex = preyCenterPointVarIndex;
+fixedVarValue = (preyCenterPointVarMinVal+preyCenterPointVarMaxVal)/2;
 
 poincareMapLastPoint = getPoincareMapLastPoint(w,fixedVarIndex,...
   fixedVarValue);
@@ -63,6 +57,15 @@ tf = 2*period;
 
 intermediateMonodromyMatrixFilename = strcat(parentDirName,...
   'monodromy_matrix\',resultsFilename);
+
+[rightPartsOfEquations,linearizedSystem,~,~,~,tstep] = getParams(...
+  preyDiffusionCoeff,secondPredatorDiffusionCoeff,...
+  firstPredatorMortality,resourceDeviation,N);
+
+nvar = N*nspecies;
+
+% Номера переменных проективной плоскости для фазовых траекторий
+firstPhasVarIndex = preyCenterPointVarIndex;
 
 [multipliers,computationTime] = calculateMultipliers(...
     rightPartsOfEquations,linearizedSystem,solver,0:tstep:tf,...

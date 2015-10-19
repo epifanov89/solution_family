@@ -10,7 +10,6 @@ classdef DoCalculateMultipliersCoreTest < ...
     secondPredatorDiffusionCoeff
     firstPredatorMortality
     resourceVariation
-    N
     
     isGetPoincareMapLastPointCalled
     solPassedInToGetPoincareMapLastPoint
@@ -48,7 +47,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     printedValsArray
     displayedValsArray
   end
-  
+    
   methods
     function [multipliers,computationTime] = fakeCalculateMultipliers(...
         testCase,rightParts,linearizedSystem,solver,tspan,...
@@ -129,11 +128,41 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
   end
   
-  methods (Access = private)      
+  methods (Access = private)    
+    function verifyGotPreyCenterPointVarExtremeValForNEqualTo3(testCase,...
+        extremeValueKind,msgStart)
+      N = 3;
+      colIndex = 2;
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
+      testCase.verifyGotPreyCenterPointVarExtremeVal(N,colIndex,...
+        extremeValueKind,msgStart);
+    end
+    
+    function verifyGotPreyCenterPointVarExtremeValForNEqualTo4(testCase,...
+        extremeValueKind,msgStart)
+      N = 4;
+      colIndex = 3;
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo4();
+      testCase.verifyGotPreyCenterPointVarExtremeVal(N,colIndex,...
+        extremeValueKind,msgStart);
+    end
+    
+    function verifyGotPreyCenterPointVarExtremeVal(testCase,N,colIndex,...
+        extremeValueKind,msgStart)
+      testCase.act();
+      args = struct;
+      args.matr = testCase.varsToLoad.w;
+      args.colIndex = colIndex;
+      args.extremeValueKind = extremeValueKind;      
+      testCase.verifyContainsItem(...
+        testCase.argsPassedInToGetLastRowWithExtremeElementValue,args,...
+        testCase.getMsg(msgStart,N));
+    end
+    
     function verifyRightVarIndicesPassedToCalculateMultipliers(testCase,...
-        N,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
-        secondPredatorCenterPointVarIndex)
-      lastPoint = testCase.getZeroArrayWithNVarColumns(N);
+        N,nvar,preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+        secondPredatorCenterPointVarIndex)      
+      lastPoint = zeros(1,nvar);
       lastPoint(N+2) = 1;      
       lastPoint(2*N+2) = 1;
       testCase.setupSolutionToLoad(lastPoint);
@@ -157,7 +186,7 @@ classdef DoCalculateMultipliersCoreTest < ...
         testCase.outputSelPassedInToCalculateMultipliers(2))),...
         strcat('В функцию вычисления мультипликаторов передан неправильный индекс второй выводимой переменной, когда плотность обеих популяций хищников отлична от нуля,',msgEnding));
       
-      lastPoint = testCase.getZeroArrayWithNVarColumns(N);      
+      lastPoint = zeros(1,nvar);      
       lastPoint(N+2) = 1;
       testCase.poincareMapLastPoint = lastPoint;
       testCase.setupSolutionToLoad(lastPoint);
@@ -168,7 +197,7 @@ classdef DoCalculateMultipliersCoreTest < ...
         firstPredatorCenterPointVarIndex,...
         strcat('В функцию вычисления мультипликаторов передан неправильный индекс второй выводимой переменной, когда плотность второй популяции хищников равна нулю,',msgEnding));
       
-      testCase.setupZeroFirstPredatorSolutionToLoad(N);
+      testCase.setupZeroFirstPredatorSolutionToLoad(nvar);
       
       testCase.act();
       testCase.verifyEqual(...
@@ -177,14 +206,27 @@ classdef DoCalculateMultipliersCoreTest < ...
         strcat('В функцию вычисления мультипликаторов передан неправильный индекс второй выводимой переменной, когда плотность первой популяции хищников равна нулю,',msgEnding));
     end
     
-    function setupZeroFirstPredatorSolutionToLoadForNEqualTo5(testCase)
-      N = 5;
-      testCase.setupTSpan();      
-      testCase.setupZeroFirstPredatorSolutionToLoad(N);      
+    function setupNonUniformSolutionToLoadForNEqualTo3(testCase)          
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();      
+      preyCenterPointVarIndex = 2;
+      testCase.varsToLoad.w(2,preyCenterPointVarIndex) = -1;
+      testCase.varsToLoad.w(7,preyCenterPointVarIndex) = 4;
     end
     
-    function setupZeroFirstPredatorSolutionToLoad(testCase,N)      
-      lastPoint = testCase.getZeroArrayWithNVarColumns(N);      
+    function setupZeroFirstPredatorSolutionToLoadForNEqualTo3(testCase)
+      nvar = 9;
+      testCase.setupTSpan();      
+      testCase.setupZeroFirstPredatorSolutionToLoad(nvar);      
+    end
+    
+    function setupZeroFirstPredatorSolutionToLoadForNEqualTo4(testCase)
+      nvar = 12;
+      testCase.setupTSpan();      
+      testCase.setupZeroFirstPredatorSolutionToLoad(nvar);      
+    end
+    
+    function setupZeroFirstPredatorSolutionToLoad(testCase,nvar)      
+      lastPoint = zeros(1,nvar);      
       testCase.setupSolutionToLoad(lastPoint);
     end
     
@@ -193,13 +235,7 @@ classdef DoCalculateMultipliersCoreTest < ...
       testCase.period = 1;
     end
     
-    function arr = getZeroArrayWithNVarColumns(~,N)
-      nspecies = 3;
-      ncol = nspecies*N;
-      arr = zeros(1,ncol);
-    end
-    
-    function setupSolutionToLoad(testCase,poincareMapLastPoint)      
+    function setupSolutionToLoad(testCase,poincareMapLastPoint)       
       testCase.poincareMapLastPoint = poincareMapLastPoint;      
       
       vars = struct;            
@@ -216,24 +252,24 @@ classdef DoCalculateMultipliersCoreTest < ...
       vars.w = w;
       
       testCase.varsToLoad = vars;      
-    end    
+    end
   end
   
   methods (Test)
     function testGetsMFilename(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.verifyGotMFilename();
     end
     
     function testGetsFileDirname(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.verifyGotFileDirname();
     end
     
     function testLoadsSolution(testCase)
       testCase.solutionResultsFilename = 'results.mat';
       testCase.dirname = 'dir\';      
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.act();      
       args = struct;
       args.filename = 'dir\solution_results\results.mat';
@@ -243,21 +279,42 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
     
     function testGetsSystem(testCase)      
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.preyDiffusionCoeff = 1;
       testCase.secondPredatorDiffusionCoeff = 2;
       testCase.firstPredatorMortality = 3;
       testCase.resourceVariation = 4;
-      testCase.N = 5;
+      N = 3;
       testCase.verifyGetsSystem(testCase.preyDiffusionCoeff,...
         testCase.secondPredatorDiffusionCoeff,...
-        testCase.firstPredatorMortality,testCase.resourceVariation,...
-        testCase.N);
+        testCase.firstPredatorMortality,testCase.resourceVariation,N);
     end
+    
+%     function testGetsPreyCenterPointVarMinValForNEqualTo3(testCase)
+%       testCase.verifyGotPreyCenterPointVarExtremeValForNEqualTo3('min',...
+%         'Не получен минимум жертвы в центре ареала');
+%     end
+%     
+%     function testGetsPreyCenterPointVarMinValForNEqualTo4(testCase)
+%       testCase.verifyGotPreyCenterPointVarExtremeValForNEqualTo4('min',...
+%         'Не получен минимум жертвы в центре ареала');
+%     end
+%     
+%     function testGetsPreyCenterPointVarMaxValForNEqualTo3(testCase)
+%       testCase.verifyGotPreyCenterPointVarExtremeValForNEqualTo3('max',...
+%         'Не получен максимум жертвы в центре ареала');
+%     end
+%     
+%     function testGetsPreyCenterPointVarMaxValForNEqualTo4(testCase)
+%       testCase.verifyGotPreyCenterPointVarExtremeValForNEqualTo4('max',...
+%         'Не получен максимум жертвы в центре ареала');
+%     end
     
     function testGetsPoincareMapLastPoint(testCase)
       testCase.isGetPoincareMapLastPointCalled = false;
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      
+      testCase.setupNonUniformSolutionToLoadForNEqualTo3();
+      
       testCase.act();
       testCase.assertTrue(testCase.isGetPoincareMapLastPointCalled,...
         'Не вызвана функция получения последней точки отображения Пуанкаре');
@@ -265,21 +322,21 @@ classdef DoCalculateMultipliersCoreTest < ...
         testCase.solPassedInToGetPoincareMapLastPoint,...
         testCase.varsToLoad.w,...
         'В функцию получения последней точки отображения Пуанкаре передано неправильное решение');
-      expFixedVarIndex = 3;      
+      expFixedVarIndex = 2;      
       testCase.verifyEqual(...
         testCase.fixedVarIndexPassedInToGetPoincareMapLastPoint,...
         expFixedVarIndex,...
         'В функцию получения последней точки отображения Пуанкаре передан неправильный индекс переменной, которая фигурирует в уравнении секущей плоскости отображения Пуанкаре');
-      expFixedVarValue = 0.5;
+      expFixedVarValue = 1.5;
       testCase.verifyEqual(...
         testCase.fixedVarValuePassedInToGetPoincareMapLastPoint,...
         expFixedVarValue,...
-        'В функцию получения последней точки отображения Пуанкаре передан неправильное значение переменной, которая фигурирует в уравнении секущей плоскости отображения Пуанкаре');
+        'В функцию получения последней точки отображения Пуанкаре передано неправильное значение переменной, которая фигурирует в уравнении секущей плоскости отображения Пуанкаре');
     end
     
     function testGetsPeriod(testCase)
       testCase.isGetPeriodCalled = false;
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupNonUniformSolutionToLoadForNEqualTo3();
       testCase.act();
       testCase.assertTrue(testCase.isGetPeriodCalled,...
         'Не вызвана функция получения периода');
@@ -291,12 +348,12 @@ classdef DoCalculateMultipliersCoreTest < ...
         testCase.solPassedInToGetPeriod,...
         testCase.varsToLoad.w,...
         'В функцию нахождения периода передано неправильное решение');
-      expFixedVarIndex = 3;      
+      expFixedVarIndex = 2;      
       testCase.verifyEqual(...
         testCase.fixedVarIndexPassedInToGetPeriod,...
         expFixedVarIndex,...
         'В функцию нахождения периода передан неправильный индекс переменной, которая фигурирует в уравнении секущей плоскости отображения Пуанкаре');
-      expFixedVarValue = 0.5;
+      expFixedVarValue = 1.5;
       testCase.verifyEqual(...
         testCase.fixedVarValuePassedInToGetPeriod,...
         expFixedVarValue,...
@@ -312,8 +369,7 @@ classdef DoCalculateMultipliersCoreTest < ...
       testCase.solver = 2;
       testCase.tstep = 4;  
       
-      N = 5;
-      testCase.setupZeroFirstPredatorSolutionToLoad(N);
+      testCase.setupNonUniformSolutionToLoadForNEqualTo3();
          
       testCase.period = 6;
       
@@ -347,16 +403,16 @@ classdef DoCalculateMultipliersCoreTest < ...
         testCase.monodromyMatrixFilenamePassedInToCalculateMultipliers,...
         expMonodromyMatrixFilename,...
         'В функцию вычисления мультипликаторов передано неправильное имя файла для сохранения промежуточных результатов');      
-      expFixedVarValue = 0.5;
+      expFixedVarValue = 1.5;
       testCase.verifyEqual(...
         testCase.fixedVarValuePassedInToCalculateMultipliers,...
         expFixedVarValue,...
         'В функцию вычисления мультипликаторов передано неправильное значение переменной, которая фигурирует в уравнении секущей плоскости отображения Пуанкаре');
-      expNVar = 15;
+      nvar = 9;
       testCase.verifyEqual(testCase.nvarPassedInToCalculateMultipliers,...
-        expNVar,...
+        nvar,...
         'В функцию вычисления мультипликаторов передано неправильное число переменных');
-      expNonNegative = 1:expNVar;
+      expNonNegative = 1:nvar;
       testCase.verifyEqual(...
         testCase.nonNegativePassedInToCalculateMultipliers,...
         expNonNegative,...
@@ -366,24 +422,26 @@ classdef DoCalculateMultipliersCoreTest < ...
         testCase.outputFcnPassedInToCalculateMultipliers,outputFcn,...
         'В функцию вычисления мультипликаторов передана неправильная функция вывода');
       
-      preyCenterPointVarIndex = 3;
-      firstPredatorCenterPointVarIndex = 8;
-      secondPredatorCenterPointVarIndex = 13;
-      testCase.verifyRightVarIndicesPassedToCalculateMultipliers(N,...
+      N = 3;
+      preyCenterPointVarIndex = 2;
+      firstPredatorCenterPointVarIndex = 5;
+      secondPredatorCenterPointVarIndex = 8;
+      testCase.verifyRightVarIndicesPassedToCalculateMultipliers(N,nvar,...
         preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex);
       
-      N = 6;
-      preyCenterPointVarIndex = 4;
-      firstPredatorCenterPointVarIndex = 10;
-      secondPredatorCenterPointVarIndex = 16;
-      testCase.verifyRightVarIndicesPassedToCalculateMultipliers(N,...
+      N = 4;
+      nvar = 12;
+      preyCenterPointVarIndex = 3;
+      firstPredatorCenterPointVarIndex = 7;
+      secondPredatorCenterPointVarIndex = 11;
+      testCase.verifyRightVarIndicesPassedToCalculateMultipliers(N,nvar,...
         preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
         secondPredatorCenterPointVarIndex);
     end
     
     function testPrintsComputationTimeIfMultipliersComputed(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.multipliers = 0;
       testCase.printedValsArray = {};
       testCase.computationTime = 1;
@@ -394,7 +452,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
     
     function testDoesNotPrintComputationTimeIfMultipliersAreNotComputed(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.computationTime = 0;
       testCase.act();
       testCase.verifyDoesNotContainItem(testCase.printedValsArray,...
@@ -403,7 +461,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
     
     function testDisplaysMultipliersIfTheyAreComputed(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.multipliers = {0 1};
       testCase.printedValsArray = {};
       testCase.verifyDisplayed(testCase.multipliers,...
@@ -411,7 +469,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
     
     function testCreatesMultipliersFolderIfMultipliersAreComputed(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.dirname = 'dir\';
       testCase.multipliers = 0;
       testCase.printedValsArray = {};
@@ -421,7 +479,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
     
     function testDoesNotCreateMultipliersFolderIfMultipliersAreNotComputed(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.dirname = 'dir\';
       testCase.act();
       testCase.verifyNotEqual(testCase.createdDirName,...
@@ -430,7 +488,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
     
     function testDoesNotAttemptToCreateMultipliersFolderIfItAlreadyExists(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.multipliers = 0;
       testCase.printedValsArray = {};
       testCase.dirname = 'dir\';
@@ -443,7 +501,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     function testSavesVarsIfMultipliersAreComputed(testCase)
       testCase.solutionResultsFilename = 'results.mat';
       testCase.dirname = 'dir\';
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.multipliers = [0 1];
       testCase.printedValsArray = {};
       testCase.computationTime = 2;
@@ -459,7 +517,7 @@ classdef DoCalculateMultipliersCoreTest < ...
     end
         
     function testDoesNotSaveVarsIfMultipliersAreNotComputed(testCase)
-      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo5();
+      testCase.setupZeroFirstPredatorSolutionToLoadForNEqualTo3();
       testCase.multipliers = [];
       testCase.act();
       testCase.verifyDoesNotContainItem(testCase.argsPassedInToSaveArr,...

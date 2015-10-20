@@ -44,15 +44,22 @@ interpreterKey = 'Interpreter';
 interpreterVal = 'latex';
 
 l = plot(tplot,firstpredatorplot,lineSpec,lineWidthKey,lineWidthVal);
-label(l,'$V$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
+h = label(l,'$V$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
   interpreterKey,interpreterVal);
+setPos(h,[279.175 0.08]);
 hold('on');
 l = plot(tplot,secondpredatorplot,lineSpec,lineWidthKey,lineWidthVal);
-label(l,'$W$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
+h = label(l,'$W$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
   interpreterKey,interpreterVal);
-xlbl('$t$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
+setPos(h,[277.984 0.88]);
+h = xlbl('$t$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
   interpreterKey,interpreterVal);
+setPos(h,[299.537 -0.041]);
 set(gca(),fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
   'XTick',[200 250],'YTick',[0 0.5 1]);
+
+  function setPos(h,pos)
+    set(h,'Position',pos);
+  end
 end
 

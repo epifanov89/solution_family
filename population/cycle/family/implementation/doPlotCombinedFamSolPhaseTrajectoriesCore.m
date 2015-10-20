@@ -33,12 +33,9 @@ interpreterKey = 'Interpreter';
 interpreterVal = 'latex';
 
 posArr = [0.527 0.378 0.365
-          0.522 0.436 0.29
-          0.504 0.481 0.23
-          0.507 0.53  0.182
-          0.491 0.495 0.129
-          0.413 0.404 0.1
-          0.403 0.424 0.04];
+          0.504 0.481 0.24
+          0.485 0.495 0.129
+          0.395 0.424 0.04];
 
 nequilibrium = 3;
 equilibriumPreyArr = zeros(1,nequilibrium);
@@ -48,8 +45,7 @@ equilibriumSecondPredatorArr = zeros(1,nequilibrium);
     equilibriumSecondPredatorArr] = processEquilibrium(solNo,sol,...
   preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
   secondPredatorCenterPointVarIndex,equilibriumPreyArr,...
-  equilibriumFirstPredatorArr,equilibriumSecondPredatorArr,posArr,...
-  lineWidthKey,lineWidthVal);
+  equilibriumFirstPredatorArr,equilibriumSecondPredatorArr);
 
 hold('on');
 
@@ -59,8 +55,7 @@ for solNo = 2:nequilibrium
       equilibriumSecondPredatorArr] = processEquilibrium(solNo,sol,...
     preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
     secondPredatorCenterPointVarIndex,equilibriumPreyArr,...
-    equilibriumFirstPredatorArr,equilibriumSecondPredatorArr,posArr,...
-    lineWidthKey,lineWidthVal);
+    equilibriumFirstPredatorArr,equilibriumSecondPredatorArr);
 end
 
 lineSpec = 'k-';
@@ -81,11 +76,9 @@ plotptstart = 99;
 for dashedLinePtNo = 2:nDashedLinePt
   solNo = nequilibrium+dashedLinePtNo-1;
   sol = loadSol(famDirName,firstPlottedEquilibriumNo,solNo);
-  [X,Y,Z] = getSolPartForPlot(sol,plotptstart,preyCenterPointVarIndex,...
-    firstPredatorCenterPointVarIndex,secondPredatorCenterPointVarIndex);
-  l = plot3(X,Y,Z,lineSpec,lineWidthKey,lineWidthVal);
-  h = labelSol(l,dashedLinePtNo+1);  
-  setPosition(h,posArr(solNo,:));
+  processSol(solNo,sol,preyCenterPointVarIndex,...
+    firstPredatorCenterPointVarIndex,secondPredatorCenterPointVarIndex,...
+    plotptstart,lineSpec);
   preyMeanArr(dashedLinePtNo) = getMeanVarVal(sol,...
     preyCenterPointVarIndex);
   firstPredatorMeanArr(dashedLinePtNo) = getMeanVarVal(sol,...
@@ -118,20 +111,28 @@ setPosition(h,pos);
         equilibriumSecondPredatorArr] = processEquilibrium(solNo,sol,...
       preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
       secondPredatorCenterPointVarIndex,equilibriumPreyArr,...
-      equilibriumFirstPredatorArr,equilibriumSecondPredatorArr,posArr,...
-      lineWidthKey,lineWidthVal)
+      equilibriumFirstPredatorArr,equilibriumSecondPredatorArr)
     plotptstart = 0;
     [solLastPtPrey,solLastPtFirstPredator,solLastPtSecondPredator] = ...
-      getSolPartForPlot(sol,plotptstart,preyCenterPointVarIndex,...
+      processSol(solNo,sol,preyCenterPointVarIndex,...
         firstPredatorCenterPointVarIndex,...
-        secondPredatorCenterPointVarIndex);
-    l = plot3(solLastPtPrey,solLastPtFirstPredator,...
-      solLastPtSecondPredator,'ko',lineWidthKey,lineWidthVal);
-    h = labelSol(l,solNo-1);
-    setPosition(h,posArr(solNo,:));
+        secondPredatorCenterPointVarIndex,plotptstart,'ko');
     equilibriumPreyArr(solNo) = solLastPtPrey;
     equilibriumFirstPredatorArr(solNo) = solLastPtFirstPredator;
     equilibriumSecondPredatorArr(solNo) = solLastPtSecondPredator;
+  end
+
+  function [X,Y,Z] = processSol(solNo,sol,...
+      preyCenterPointVarIndex,firstPredatorCenterPointVarIndex,...
+      secondPredatorCenterPointVarIndex,plotptstart,lineSpec)
+    [X,Y,Z] = getSolPartForPlot(sol,plotptstart,preyCenterPointVarIndex,...
+      firstPredatorCenterPointVarIndex,secondPredatorCenterPointVarIndex);
+    l = plot3(X,Y,Z,lineSpec,lineWidthKey,lineWidthVal);
+    if mod(solNo,2) == 1
+      labelNo = (solNo-1)/2;
+      h = labelSol(l,labelNo);
+      setPosition(h,posArr(labelNo+1,:));
+    end    
   end
 
   function meanVarVal = getMeanVarVal(sol,varIndex)

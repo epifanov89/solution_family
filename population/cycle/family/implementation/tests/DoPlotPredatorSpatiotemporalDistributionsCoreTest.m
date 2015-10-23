@@ -1,11 +1,21 @@
 classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
     matlab.unittest.TestCase & FakeCurrentDirNameHelper...
-      & MultipleLoadTestHelper & SubplotTestHelper
+      & MultipleLoadTestHelper & SubplotTestHelper...
+      & MultipleFigurePlotsTestHelper
   
   properties
     famDirName
     sol1Filename
     sol2Filename
+    tf
+    nspecies
+    gap
+    solAIndexOfLastPtWithPredator1Max
+    solAIndexOfPreLastPtWithPredator1Max
+    solAIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max
+    solBIndexOfLastPtWithPredator1Max
+    solBIndexOfPreLastPtWithPredator1Max
+    solBIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max
     argsPassedInToGetLastRowWithExtremeElementValue
     pointIndex
     argsPassedInToGetPeriod
@@ -14,6 +24,7 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
     solutionParts
     argsPassedInToPlot3D
     argsPassedInToAxis
+    lastYTickArr
   end
   
   methods (TestMethodSetup)
@@ -23,6 +34,17 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         'dir\solution_results\families\p=1+0.5sin(2 pi x)\l2=1.1\';
       testCase.sol1Filename = '1.mat';
       testCase.sol2Filename = '9.mat';
+      testCase.gap = 100;
+      testCase.tf = 20*testCase.gap-1;
+      testCase.nspecies = 3;   
+      testCase.solAIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max = ...
+        testCase.gap;
+      testCase.solAIndexOfPreLastPtWithPredator1Max = 250;
+      testCase.solAIndexOfLastPtWithPredator1Max = 500;            
+      testCase.solBIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max = ...
+        2*testCase.gap; 
+      testCase.solBIndexOfPreLastPtWithPredator1Max = 4*testCase.gap;      
+      testCase.solBIndexOfLastPtWithPredator1Max = 6*testCase.gap;           
       testCase.argsPassedInToGetLastRowWithExtremeElementValue = [];
       testCase.argsPassedInToGetPeriod = [];
       testCase.periodsToReturnFromGetPeriod = [];
@@ -34,12 +56,78 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
   end
   
   methods
-    function setupSolutionToLoadFromFile(testCase,filename,t,w,...
-        varIndex,period,...
-        lastPointWithExtremeVarValueIndex,...
-        preLastPointWithExtremeVarValueIndex)      
+    function setupAlignedSolutionsOfSameLengthToLoadForNEqualTo3(testCase)
+      testCase.setupAlignedSolutionsToLoadForNEqualTo3(testCase.tf,...
+        testCase.tf);
+    end
+    
+    function setupAlignedSolutionsToLoadForNEqualTo3(testCase,solATF,...
+        solBTF)
+      solATStep = 2;
+      solBTStep = 1;
+      testCase.setupSolutionsToLoadForNEqualTo3(solATStep,solBTStep,...
+        solATF,solBTF);
+    end
+    
+    function setupAlignedSolutionsToLoad(testCase,N,nvar,solATF,solBTF)
+      solATStep = 2;
+      solBTStep = 1;
+      testCase.setupSolutionsToLoad(N,nvar,solATStep,solBTStep,solATF,...
+        solBTF);
+    end
+    
+    function setupNotAlignedSolutionsToLoadForNEqualTo3(testCase)
+      solATStep = 1.5;
+      solBTStep = 1;
+      testCase.setupSolutionsToLoadForNEqualTo3(solATStep,solBTStep,...
+        testCase.tf,testCase.tf);
+    end
+    
+    function setupSolutionsToLoadForNEqualTo3(testCase,solATStep,...
+        solBTStep,solATF,solBTF)
+      N = 3;
+      nvar = 9;
+      testCase.setupSolutionsToLoad(N,nvar,solATStep,solBTStep,solATF,...
+        solBTF);
+    end
+    
+    function setupSolutionsToLoad(testCase,N,nvar,solATStep,solBTStep,...
+        solATF,solBTF)      
+      offset = 0;            
+      tstep = solATStep;
+      
+      testCase.setupSolutionToLoadFromFile(testCase.sol1Filename,N,nvar,...
+        tstep,offset,solATF,...
+        testCase.solAIndexOfLastPtWithPredator1Max,...
+        testCase.solAIndexOfPreLastPtWithPredator1Max,...
+        testCase.solAIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max);
+      
+      offset = fix((solATF+1)/solATStep)*testCase.nspecies;
+      tstep = solBTStep;      
+      
+      testCase.setupSolutionToLoadFromFile(testCase.sol2Filename,N,nvar,...
+        tstep,offset,solBTF,...
+        testCase.solBIndexOfLastPtWithPredator1Max,...
+        testCase.solBIndexOfPreLastPtWithPredator1Max,...
+        testCase.solBIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max);
+    end
+    
+    function setupSolutionToLoadFromFile(testCase,filename,N,nvar,tstep,...
+        offset,tf,indexOfLastPtWithPredator1Max,...
+        indexOfPreLastPtWithPredator1Max,...
+        indexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max)      
       loadedVars = struct;
       loadedVars.filename = strcat(testCase.famDirName,filename);
+      
+      t = 0:tstep:tf;
+      npt = fix((tf+1)/tstep);
+      w = zeros(npt,nvar);      
+      for pt = 1:npt
+        w(pt,1:N) = offset+1;
+        w(pt,N+1:2*N) = offset+2;
+        w(pt,2*N+1:3*N) = offset+3;
+        offset = offset+testCase.nspecies;
+      end
       
       vars = struct;
       vars.t = t;
@@ -48,100 +136,34 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
       loadedVars.vars = vars;
       
       testCase.varsToLoad = [testCase.varsToLoad,loadedVars];
-            
+      
       vars = struct;
       vars.sol = w;
-      vars.colIndex = varIndex;
-      sz = size(w);
-      vars.rowIndexStart = sz(1);
+      vars.rowIndexStart = length(t);
       vars.row = [];
-      vars.rowIndex = lastPointWithExtremeVarValueIndex;
+      vars.rowIndex = indexOfLastPtWithPredator1Max;
+            
+      testCase.varsToReturnFromGetLastRowWithExtremeElementValue = ...
+        [testCase.varsToReturnFromGetLastRowWithExtremeElementValue,vars];
+      
+      vars = struct;
+      vars.sol = w;
+      vars.rowIndexStart = indexOfLastPtWithPredator1Max;
+      vars.row = [];
+      vars.rowIndex = indexOfPreLastPtWithPredator1Max;
       
       testCase.varsToReturnFromGetLastRowWithExtremeElementValue = ...
         [testCase.varsToReturnFromGetLastRowWithExtremeElementValue,vars];
       
       vars = struct;
       vars.sol = w;
-      vars.colIndex = varIndex;
-      vars.rowIndexStart = lastPointWithExtremeVarValueIndex;
+      vars.rowIndexStart = indexOfPreLastPtWithPredator1Max;
       vars.row = [];
-      vars.rowIndex = preLastPointWithExtremeVarValueIndex;
+      vars.rowIndex = ...
+        indexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max;
       
       testCase.varsToReturnFromGetLastRowWithExtremeElementValue = ...
         [testCase.varsToReturnFromGetLastRowWithExtremeElementValue,vars];
-      
-      periodToReturn = struct;
-      periodToReturn.t = t;
-      periodToReturn.w = w;
-      periodToReturn.period = period;
-      testCase.periodsToReturnFromGetPeriod = ...
-        [testCase.periodsToReturnFromGetPeriod,periodToReturn];
-    end
-    
-    function setupSolutionsToLoad(testCase,N,centerPointIndex,...
-        periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB)
-      nspecies = 3;
-      nvar = N*nspecies;
-      
-      varIndex = N+centerPointIndex;
-      
-      testCase.varsToLoad = [];
-      testCase.varsToReturnFromGetLastRowWithExtremeElementValue = [];
-      
-      npt = 30;
-      t = zeros(1,npt);
-      w = zeros(npt,nvar);
-      testCase.setupSolutionToLoadFromFile(testCase.sol1Filename,t,w,...
-        varIndex,periodA,...
-        lastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexA);
-      
-      solPart = struct;
-      solPart.tsol = t;
-      solPart.wsol = w;
-      
-      gap = 100;
-      npt = 2*gap;
-      solPart.tpart = 0:1:npt-1;      
-      
-      wpart = zeros(npt,3*N);
-      for pt = 1:npt
-        offset = nspecies*(pt-1);
-        wpart(pt,1:N) = offset;
-        wpart(pt,N+1:2*N) = offset+1;
-        wpart(pt,2*N+1:3*N) = offset+2;
-      end
-      solPart.wpart = wpart;
-      
-      testCase.solutionParts = [testCase.solutionParts,solPart];
-      
-      t = ones(1,npt);
-      w = ones(npt,nvar);
-      testCase.setupSolutionToLoadFromFile(testCase.sol2Filename,t,w,...
-        varIndex,periodB,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexB);
-            
-      solPart = struct;
-      solPart.tsol = t;
-      solPart.wsol = w;
-      
-      solPart.tpart = npt:1:2*npt-1;
-      
-      wpart = zeros(npt,3*N);
-      for pt = 1:npt
-        offset = nspecies*(npt+pt-1);
-        wpart(pt,1:N) = offset;
-        wpart(pt,N+1:2*N) = offset+1;
-        wpart(pt,2*N+1:3*N) = offset+2;
-      end
-      solPart.wpart = wpart;
-      
-      testCase.solutionParts = [testCase.solutionParts,solPart];
     end
         
     function [row,rowIndex] = fakeGetLastRowWithExtremeElementValue(...
@@ -160,52 +182,14 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         [testCase.argsPassedInToGetLastRowWithExtremeElementValue,...
           argsInfo];
       
-      vars = testCase.varsToReturnFromGetLastRowWithExtremeElementValue(...
-        arrayfun(@(v) isequal(v.sol,sol) && v.colIndex == colIndex...
+      varsToReturn = getArrayItems(@(v) isequal(v.sol,sol)...
           && v.rowIndexStart == rowIndexStart,...
-          testCase.varsToReturnFromGetLastRowWithExtremeElementValue));
+        testCase.varsToReturnFromGetLastRowWithExtremeElementValue);
       
-      if ~isempty(vars)
-        row = vars.row;
-        rowIndex = vars.rowIndex;
-      else
-        row = [];
-        rowIndex = [];
-      end
+      row = varsToReturn.row;
+      rowIndex = varsToReturn.rowIndex;
     end
-    
-    function T = fakeGetPeriod(testCase,t,w,fixedVarIndex,fixedVarValue)
-      argsInfo = struct;
-      argsInfo.t = t;
-      argsInfo.w = w;
-      argsInfo.fixedVarIndex = fixedVarIndex;
-      argsInfo.fixedVarValue = fixedVarValue;
-      testCase.argsPassedInToGetPeriod = ...
-        [testCase.argsPassedInToGetPeriod,argsInfo];
-      
-      periodToReturnFromGetPeriod = ...
-        testCase.periodsToReturnFromGetPeriod(arrayfun(...
-          @(p) isequal(p.t,t) && isequal(p.w,w),...
-          testCase.periodsToReturnFromGetPeriod));
-      T = periodToReturnFromGetPeriod.period;
-    end
-    
-    function [t,w] = fakeGetSolutionPart(testCase,t,w,pointIndex,tspan)
-      argsInfo = struct;
-      argsInfo.t = t;
-      argsInfo.w = w;
-      argsInfo.pointIndex = pointIndex;
-      argsInfo.tspan = tspan;
-      testCase.argsPassedInToGetSolutionPart = ...
-        [testCase.argsPassedInToGetSolutionPart,argsInfo];
-      
-      solPart = testCase.solutionParts(arrayfun(...
-        @(sol) isequal(sol.tsol,t) && isequal(sol.wsol,w),...
-        testCase.solutionParts));
-      t = solPart.tpart;
-      w = solPart.wpart;
-    end
-    
+        
     function h = fakePlot3D(testCase,handle,X,Y,Z)
       args = struct;      
       args.handle = handle;
@@ -216,9 +200,6 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
       h = 1;
     end
     
-    function fakeSet(~,varargin)      
-    end
-    
     function fakeAxis(testCase,handle,lims)
       args = struct;
       args.handle = handle;
@@ -226,181 +207,216 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
       testCase.argsPassedInToAxis = [testCase.argsPassedInToAxis,args];
     end
     
-    function fakeXLabel(~,varargin)
+    function verifyGotSolLastPtWithPredator1MaxForNEqualTo3(testCase,...
+        filename,msgStart)
+      rowIndexStart = testCase.npt;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo3(filename,...
+        rowIndexStart,msgStart);
     end
     
-    function fakeYLabel(~,varargin)
+    function verifyGotSolLastPtWithPredator1MaxForNEqualTo4(testCase,...
+        filename,msgStart)      
+      rowIndexStart = testCase.npt;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo4(filename,...
+        rowIndexStart,msgStart);
     end
     
-    function fakeZLabel(~,varargin)
+    function verifyGotSolPtWithPredator1MaxForNEqualTo3(testCase,...
+        filename,rowIndexStart,msgStart)
+      extremumKind = 'max';
+      testCase.verifyGotSolPtWithPredator1ExtremumForNEqualTo3(filename,...
+        extremumKind,rowIndexStart,msgStart);
     end
     
-    function verifyGotSolutionPointWithMinFirstPredatorCenterPointDensity(...
-        testCase,filename,N,centerPointIndex,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        rowIndexStart,msg)
-      periodA = 50;
-      periodB = 30;
-      preLastPointWithExtremeVarValueIndexA = 1;
-      preLastPointWithExtremeVarValueIndexB = 2;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);
+    function verifyGotSolPtWithPredator1MaxForNEqualTo4(testCase,...
+        filename,rowIndexStart,msgStart)
+      extremumKind = 'max';
+      testCase.verifyGotSolPtWithPredator1ExtremumForNEqualTo4(filename,...
+        extremumKind,rowIndexStart,msgStart);
+    end
+        
+    function verifyGotSolPtWithPredator1MinForNEqualTo3(testCase,...
+        filename,rowIndexStart,msgStart)
+      extremumKind = 'min';
+      testCase.verifyGotSolPtWithPredator1ExtremumForNEqualTo3(filename,...
+        extremumKind,rowIndexStart,msgStart);
+    end
+    
+    function verifyGotSolPtWithPredator1MinForNEqualTo4(testCase,...
+        filename,rowIndexStart,msgStart)
+      extremumKind = 'min';
+      testCase.verifyGotSolPtWithPredator1ExtremumForNEqualTo4(filename,...
+        extremumKind,rowIndexStart,msgStart);
+    end
+        
+    function verifyGotSolPtWithPredator1ExtremumForNEqualTo3(testCase,...
+        filename,extremumKind,rowIndexStart,msg)
+      N = 3;
+      nvar = 9;
+      firstPredatorCenterPointVarIndex = 5;
+      testCase.verifyGotSolPtWithPredator1Extremum(filename,N,nvar,...
+        firstPredatorCenterPointVarIndex,extremumKind,rowIndexStart,msg);
+    end
+    
+    function verifyGotSolPtWithPredator1ExtremumForNEqualTo4(testCase,...
+        filename,extremumKind,rowIndexStart,msg)
+      N = 4;
+      nvar = 12;
+      firstPredatorCenterPointVarIndex = 7;
+      testCase.verifyGotSolPtWithPredator1Extremum(filename,N,nvar,...
+        firstPredatorCenterPointVarIndex,extremumKind,rowIndexStart,msg);
+    end
+    
+    function verifyGotSolPtWithPredator1Extremum(testCase,filename,N,...
+        nvar,firstPredatorCenterPointVarIndex,extremumKind,...
+        rowIndexStart,msgStart)
+      testCase.setupAlignedSolutionsToLoad(N,nvar,testCase.tf,testCase.tf);
       testCase.act();
       
       vars = testCase.getVarsWithNamesToLoadFromFile(...
         strcat(testCase.famDirName,filename),{'t','w'});
-      
-      varIndex = N+centerPointIndex;
-      
+            
       argsInfo = struct;
       argsInfo.sol = vars.w;
-      argsInfo.colIndex = varIndex;
-      argsInfo.extremeValueKind = 'min';
+      argsInfo.colIndex = firstPredatorCenterPointVarIndex;
+      argsInfo.extremeValueKind = extremumKind;
       argsInfo.rowIndexStart = rowIndexStart;
       testCase.verifyFalse(isempty(find(arrayfun(...
         @(args) isequal(args,argsInfo),...
-        testCase.argsPassedInToGetLastRowWithExtremeElementValue),1)),msg);
+        testCase.argsPassedInToGetLastRowWithExtremeElementValue),1)),...
+        testCase.getMsg(msgStart,N));
     end
     
-    function verifyGotSolutionPeriod(testCase,filename,N,...
-        centerPointIndex,msg)
-      periodA = 30;
-      periodB = 50;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      preLastPointWithExtremeVarValueIndexA = 3;
-      preLastPointWithExtremeVarValueIndexB = 4;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);
-      testCase.act();
-      
-      loadedVars = testCase.getVarsWithNamesToLoadFromFile(...
-        strcat(testCase.famDirName,filename),{'t','w'});
-      
-      preyCenterPointVarIndex = centerPointIndex;
-      
-      expArgs = struct;
-      expArgs.t = loadedVars.t;
-      expArgs.w = loadedVars.w;
-      expArgs.fixedVarIndex = preyCenterPointVarIndex;
-      expArgs.fixedVarValue = 0.5;
-      testCase.verifyFalse(isempty(find(arrayfun(...
-        @(args) isequal(args,expArgs),...
-        testCase.argsPassedInToGetPeriod),1)),msg);
+    function verifySolAPredatorPlottedWhenSolATimesAreAlignedWithSolBTimes(...
+        testCase,pos,predatorNo,solATF,solBTF,msg)
+      testCase.setupAlignedSolutionsToLoadForNEqualTo3(solATF,solBTF);
+      nrow = 3;
+      tstep = 2;
+      testCase.verifySolAPredatorPlotted(pos,predatorNo,nrow,tstep,msg);
     end
     
-    function verifyGotSolutionOnOneAndAHalfTSpans(testCase,filename,N,...
-        centerPointIndex,periodA,periodB,tspan,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB,pointIndex,msg)
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);
+    function verifySolAPredatorPlottedWhenSolATimesAreNotAlignedWithSolBTimes(...
+        testCase,pos,predatorNo,msg)
+      testCase.setupNotAlignedSolutionsToLoadForNEqualTo3();
+      nrow = 3;
+      tstep = 1.5;
+      testCase.verifySolAPredatorPlotted(pos,predatorNo,nrow,tstep,msg);
+    end
+    
+    function verifySolAPredatorPlotted(testCase,pos,predatorNo,nrow,...
+        tstep,msg)      
+      offset = ...
+        (testCase.solAIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max-1)*...
+          testCase.nspecies;
+      testCase.verifySolPredatorPlotted(pos,predatorNo,nrow,...
+        tstep,offset,msg);
+    end
+    
+    function verifySolBPredatorPlotted(testCase,pos,predatorNo,solATF,...
+        solBTF,msg)
+      testCase.setupAlignedSolutionsToLoadForNEqualTo3(solATF,solBTF);
+      nrow = 5;
+      tstep = 1;
+      offset = ((solATF+1)/2+...
+          testCase.solBIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max-1)*...
+        testCase.nspecies;
+      testCase.verifySolPredatorPlotted(pos,predatorNo,nrow,...
+        tstep,offset,msg);
+    end
+    
+    function verifySolPredatorPlotted(testCase,pos,predatorNo,...
+        nrow,tstep,offset,msg)
+      testCase.setupAxesHandlesToReturnFromSubplot(pos);          
       
-      testCase.act();
+      Y = zeros(1,nrow);
+      N = 3;      
+      Z = zeros(nrow,N);
+      for pt = 1:nrow
+        Y(pt) = (pt-1)*tstep*testCase.gap;
+        Z(pt,:) = offset+1+predatorNo;
+        offset = offset+testCase.nspecies*testCase.gap;
+      end
             
-      vars = testCase.getVarsWithNamesToLoadFromFile(...
-        strcat(testCase.famDirName,filename),{'t','w'});
-      
-      argsInfo = struct;
-      argsInfo.t = vars.t;
-      argsInfo.w = vars.w;
-      argsInfo.pointIndex = pointIndex;
-      argsInfo.tspan = 1.5*tspan;
-      testCase.verifyFalse(isempty(find(arrayfun(...
-        @(args) isequal(args,argsInfo),...
-        testCase.argsPassedInToGetSolutionPart),1)),msg);
+      testCase.verifyPlotted(pos,Y,Z,msg);
     end
-        
-    function verifyPlotted(testCase,handle,Y,Z,msg)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 30;
-      periodB = 50;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      preLastPointWithExtremeVarValueIndexA = 3;
-      preLastPointWithExtremeVarValueIndexB = 4;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);      
+    
+    function verifyPlotted(testCase,handle,Y,Z,msg)      
       testCase.act();
       args = struct;
       args.handle = handle;
-      args.X = [0 0.2 0.4 0.6 0.8];
+      args.X = [0 1/3 2/3];
       args.Y = Y;
       args.Z = Z;
-      testCase.verifyFalse(isempty(find(arrayfun(@(a)...
-        isequal(a,args),testCase.argsPassedInToPlot3D),1)),msg);
+      testCase.verifyContainsItem(testCase.argsPassedInToPlot3D,args,msg);
     end
     
     function verifyPlotFittedInLimits(testCase,handle,ZMin,ZMax,msg)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 30;
-      periodB = 50;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      preLastPointWithExtremeVarValueIndexA = 3;
-      preLastPointWithExtremeVarValueIndexB = 4;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);
-      pos = 1;
-      axesHandle = 1;
-      setupAxesHandles();
-      pos = 2;
-      axesHandle = 2;
-      setupAxesHandles();
-      pos = 3;
-      axesHandle = 3;
-      setupAxesHandles();
-      pos = 4;
-      axesHandle = 4;
-      setupAxesHandles();
-      testCase.act();      
-      testCase.verifyFalse(isempty(find(arrayfun(@(a)...
-        a.handle == handle && a.lims(1) <= 0 && a.lims(2) >= 1 ... 
-          && a.lims(3) <= 0 && a.lims(4) >= periodA...
-          && a.lims(5) <= ZMin && a.lims(6) >= ZMax,...
-        testCase.argsPassedInToAxis),1)),msg);
-      
-      function setupAxesHandles()
-        testCase.setupAxesHandlesToReturnFromSubplot(pos,axesHandle);
+      testCase.setupAlignedSolutionsOfSameLengthToLoadForNEqualTo3();
+      nplot = 4;
+      for pos = 1:nplot
+        testCase.setupAxesHandlesToReturnFromSubplot(pos);
       end
-    end    
+      testCase.act();      
+      
+      tspan = ...
+        testCase.solBIndexOfLastPtWithPredator1Max-...
+        testCase.solBIndexOfLastPtWithPredator1MinBeforePreLastPtWithPredator1Max+1;
+      
+      testCase.verifyContains(@(a)...
+        a.handle == handle && a.lims(1) <= 0 && a.lims(2) >= 1 ... 
+          && a.lims(3) <= 0 && a.lims(4) >= tspan...
+          && a.lims(5) <= ZMin && a.lims(6) >= ZMax,...
+        testCase.argsPassedInToAxis,msg);
+    end
+    
+    function verifyLastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        testCase,pos)               
+      tstep = 1.007;
+      
+      testCase.setupSolutionsToLoadForNEqualTo3(tstep,tstep,testCase.tf,...
+        testCase.tf);
+      
+      testCase.setupAxesHandlesToReturnFromSubplot(pos);          
+      testCase.act();
+      expLastYTick = struct;
+      expLastYTick.handle = pos;
+      expLastYTick.YTick = 402;
+      testCase.verifyContainsItem(testCase.lastYTickArr,expLastYTick,...
+        sprintf(...
+          'Последняя метка на оси времени %d-го графика не соответсутвует последнему целому значению',...
+          pos));
+    end
+    
+    function [N,nvar,predator1CenterPtVarIndex] = ...
+        getVarNumbersAndIndicesForNEqualTo3(~)
+      N = 3;
+      nvar = 9;
+      predator1CenterPtVarIndex = 5;
+    end
   end
   
   methods (Access = protected)
+    function setupAxesHandlesToReturnFromSubplot(testCase,pos)
+      handle = pos;
+      setupAxesHandlesToReturnFromSubplot@SubplotTestHelper(testCase,...
+        pos,handle);
+    end
+    
+    function fakeSet(testCase,h,varargin)
+      YTickIndexArr = find(strcmp(varargin,'YTick'));
+      if ~isempty(YTickIndexArr)
+        YTickArr = varargin{YTickIndexArr(1)+1};
+        lastYTickPassedInToSet = struct;
+        lastYTickPassedInToSet.handle = h;
+        lastYTickPassedInToSet.YTick = YTickArr(end);
+        testCase.lastYTickArr = [testCase.lastYTickArr,...
+          lastYTickPassedInToSet];
+      end
+    end
+    
     function verifySubplotCalled(testCase,pos,msg)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 30;
-      periodB = 50;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      preLastPointWithExtremeVarValueIndexA = 3;
-      preLastPointWithExtremeVarValueIndexB = 4;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);
+      testCase.setupAlignedSolutionsToLoadForNEqualTo3(testCase.tf,...
+        testCase.tf);
       nrow = 2;
       ncol = 2;
       verifySubplotCalled@SubplotTestHelper(testCase,nrow,ncol,pos,msg);
@@ -410,157 +426,98 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
       doPlotPredatorSpatiotemporalDistributionsCore(...
         @testCase.fakeCurrentDirName,@testCase.fakeLoad,...
         @testCase.fakeGetLastRowWithExtremeElementValue,...
-        @testCase.fakeGetPeriod,@testCase.fakeGetSolutionPart,...
-        @testCase.fakeSubplot,@testCase.fakePlot3D,...        
-        @testCase.fakeSet,@testCase.fakeAxis,...
-        @testCase.fakeXLabel,@testCase.fakeYLabel,@testCase.fakeZLabel);
+        @testCase.fakeSubplot,@testCase.fakePlot3D,@testCase.fakeSet,...
+        @testCase.fakeAxis,@testCase.fakeXLabel,@testCase.fakeYLabel,...
+        @testCase.fakeZLabel);
     end
   end
   
   methods (Test)
-    function testGetsSolutionAPointWithMinFirstPredatorDensityForNEqualTo5(testCase)
-      N = 5;
-      centerPointIndex = 3;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionPointWithMinFirstPredatorCenterPointDensity(...
-        testCase.sol1Filename,N,centerPointIndex,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        lastPointWithExtremeVarValueIndexA,...
-        'Не получена точка решения A с минимумом первой популяции хищников в центре ареала при N = 5');
+    function testGetsSolALastPtWithPredator1MaxForNEqualTo3(testCase)
+      rowIndexStart = (testCase.tf+1)/2;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo3(...
+        testCase.sol1Filename,rowIndexStart,...
+        'Не получена последняя точка решения A с максимумом первого хищника');
     end
     
-    function testGetsSolutionBPointWithMinFirstPredatorDensityForNEqualTo5(testCase)
-      N = 5;
-      centerPointIndex = 3;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionPointWithMinFirstPredatorCenterPointDensity(...
-        testCase.sol2Filename,N,centerPointIndex,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        lastPointWithExtremeVarValueIndexB,...
-        'Не получена точка решения B с минимумом первой популяции хищников в центре ареала при N = 5');
+    function testGetsSolALastPtWithPredator1MaxForNEqualTo4(testCase)
+      rowIndexStart = (testCase.tf+1)/2;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo4(...
+        testCase.sol1Filename,rowIndexStart,...
+        'Не получена последняя точка решения A с максимумом первого хищника');
     end
     
-    function testGetsSolutionAPointWithMinFirstPredatorDensityForNEqualTo6(testCase)
-      N = 6;
-      centerPointIndex = 4;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionPointWithMinFirstPredatorCenterPointDensity(...
-        testCase.sol1Filename,N,centerPointIndex,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        lastPointWithExtremeVarValueIndexA,...
-        'Не получена точка решения A с минимумом первой популяции хищников в центре ареала при N = 6');
+    function testGetsSolAPreLastPtWithPredator1MaxForNEqualTo3(testCase)
+      rowIndexStart = testCase.solAIndexOfLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo3(...
+        testCase.sol1Filename,rowIndexStart,...
+        'Не получена предпоследняя точка решения A с максимумом первого хищника');
     end
     
-    function testGetsSolutionBPointWithMinFirstPredatorDensityForNEqualTo6(testCase)
-      N = 6;
-      centerPointIndex = 4;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionPointWithMinFirstPredatorCenterPointDensity(...
-        testCase.sol2Filename,N,centerPointIndex,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        lastPointWithExtremeVarValueIndexB,...
-        'Не получена точка решения B с минимумом первой популяции хищников в центре ареала при N = 6');
+    function testGetsSolAPreLastPtWithPredator1MaxForNEqualTo4(testCase)
+      rowIndexStart = testCase.solAIndexOfLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo4(...
+        testCase.sol1Filename,rowIndexStart,...
+        'Не получена предпоследняя точка решения A с максимумом первого хищника');
     end
     
-    function testGetsSolutionAPeriodForNEqualTo5(testCase)
-      N = 5;
-      centerPointIndex = 3;
-      testCase.verifyGotSolutionPeriod(testCase.sol1Filename,N,...
-        centerPointIndex,'Не получен период решения A при N = 5');
+    function testGetsForNEqualTo3SolALastPtWithPredator1MinBeforePreLastPtWithPredator1Max(testCase)
+      rowIndexStart = testCase.solAIndexOfPreLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MinForNEqualTo3(...
+        testCase.sol1Filename,rowIndexStart,...
+        'Не получена последняя точка решения A с минимумом первого хищника, предшествующая предпоследней точке максимума первого хищника');
     end
     
-    function testGetsSolutionAPeriodForNEqualTo6(testCase)
-      N = 6;
-      centerPointIndex = 4;
-      testCase.verifyGotSolutionPeriod(testCase.sol1Filename,N,...
-        centerPointIndex,'Не получен период решения A при N = 6');
+    function testGetsForNEqualTo4SolALastPtWithPredator1MinBeforePreLastPtWithPredator1Max(testCase)
+      rowIndexStart = testCase.solAIndexOfPreLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MinForNEqualTo4(...
+        testCase.sol1Filename,rowIndexStart,...
+        'Не получена последняя точка решения A с минимумом первого хищника, предшествующая предпоследней точке максимума первого хищника');
+    end  
+    
+    function testGetsSolBLastPtWithPredator1MaxForNEqualTo3(testCase)
+      rowIndexStart = testCase.tf+1;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo3(...
+        testCase.sol2Filename,rowIndexStart,...
+        'Не получена последняя точка решения B с максимумом первого хищника');
     end
     
-    function testGetsSolutionBPeriodForNEqualTo5(testCase)
-      N = 5;
-      centerPointIndex = 3;
-      testCase.verifyGotSolutionPeriod(testCase.sol2Filename,N,...
-        centerPointIndex,'Не получен период решения B при N = 5');
+    function testGetsSolBLastPtWithPredator1MaxForNEqualTo4(testCase)
+      rowIndexStart = testCase.tf+1;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo4(...
+        testCase.sol2Filename,rowIndexStart,...
+        'Не получена последняя точка решения B с максимумом первого хищника');
     end
     
-    function testGetsSolutionBPeriodForNEqualTo6(testCase)
-      N = 6;
-      centerPointIndex = 4;
-      testCase.verifyGotSolutionPeriod(testCase.sol2Filename,N,...
-        centerPointIndex,'Не получен период решения B при N = 6');
+    function testGetsSolBPreLastPtWithPredator1MaxForNEqualTo3(testCase)
+      rowIndexStart = testCase.solBIndexOfLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo3(...
+        testCase.sol2Filename,rowIndexStart,...
+        'Не получена предпоследняя точка решения B с максимумом первого хищника');
     end
     
-    function testGetsSolAOnOneAndAHalfSolBPeriodsWhenSolBPeriodIsLess(...
+    function testGetsSolBPreLastPtWithPredator1MaxForNEqualTo4(testCase)
+      rowIndexStart = testCase.solBIndexOfLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MaxForNEqualTo4(...
+        testCase.sol2Filename,rowIndexStart,...
+        'Не получена предпоследняя точка решения B с максимумом первого хищника');
+    end
+    
+    function testGetsForNEqualTo3SolBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max(...
         testCase)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 50;
-      periodB = 30;
-      preLastPointWithExtremeVarValueIndexA = 1;
-      preLastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionOnOneAndAHalfTSpans(...
-        testCase.sol1Filename,N,centerPointIndex,periodA,periodB,...
-        periodB,preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        'Не получено решение A на полутора периодах решения B, когда меньший период - у решения B');
+      rowIndexStart = testCase.solBIndexOfPreLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MinForNEqualTo3(...
+        testCase.sol2Filename,rowIndexStart,...
+        'Не получена последняя точка решения B с минимумом первого хищника, предшествующая предпоследней точке максимума первого хищника');
     end
     
-    function testGetsSolAOnOneAndAHalfSolAPeriodsWhenSolAPeriodIsLess(...
+    function testGetsForNEqualTo4SolBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max(...
         testCase)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 30;
-      periodB = 50;
-      preLastPointWithExtremeVarValueIndexA = 1;
-      preLastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionOnOneAndAHalfTSpans(...
-        testCase.sol1Filename,N,centerPointIndex,periodA,periodB,...
-        periodA,preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        'Не получено решение A на полутора периодах решения A, когда меньший период - у решения A');
-    end
-    
-    function testGetsSolBOnOneAndAHalfSolBPeriodsWhenSolBPeriodIsLess(...
-        testCase)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 50;
-      periodB = 30;
-      preLastPointWithExtremeVarValueIndexA = 1;
-      preLastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionOnOneAndAHalfTSpans(...
-        testCase.sol2Filename,N,centerPointIndex,periodA,periodB,...
-        periodB,preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexB,...
-        'Не получено решение B на полутора периодах решения B, когда меньший период - у решения B');
-    end
-    
-    function testGetsSolBOnOneAndAHalfSolAPeriodsWhenSolAPeriodIsLess(...
-        testCase)
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 30;
-      periodB = 50;
-      preLastPointWithExtremeVarValueIndexA = 1;
-      preLastPointWithExtremeVarValueIndexB = 2;
-      testCase.verifyGotSolutionOnOneAndAHalfTSpans(...
-        testCase.sol2Filename,N,centerPointIndex,periodA,periodB,...
-        periodA,preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexB,...
-        'Не получено решение B на полутора периодах решения A, когда меньший период - у решения A');
-    end
+      rowIndexStart = testCase.solBIndexOfPreLastPtWithPredator1Max;
+      testCase.verifyGotSolPtWithPredator1MinForNEqualTo4(...
+        testCase.sol2Filename,rowIndexStart,...
+        'Не получена последняя точка решения B с минимумом первого хищника, предшествующая предпоследней точке максимума первого хищника');
+    end   
     
     function testCreatesFirstSubplot(testCase)
       pos = 1;
@@ -583,112 +540,110 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
         'Не создана четвертая область окна');
     end
     
-    function testPlotsSolutionAFirstPredatorPart(testCase)
-      gap = 100;
-      Y = [0 gap];
-      N = 5;
-      Z(1,1:N) = 1;
-      Z(2,1:N) = 3*gap+1;
-      
-      pos = 1;      
-      handle = 1;      
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
-      testCase.verifyPlotted(handle,Y,Z,...
-        'Не построен график первого хищника для решения A');
+    function testPlotsSolAPredator1PartWhenSolATimesAreAlignedWithSolBTimes(...
+        testCase)
+      pos = 1;
+      predatorNo = 1;
+      testCase.verifySolAPredatorPlottedWhenSolATimesAreAlignedWithSolBTimes(...
+        pos,predatorNo,testCase.tf,testCase.tf,...
+        'Не построен график 1-го хищника для решения A, когда времена решения A совпадают с временами решения B');
     end
     
-    function testPlotsSolutionBFirstPredatorPart(testCase)
-      gap = 100;
-      Y = [2*gap 3*gap];
-      N = 5;
-      Z(1,1:N) = 6*gap+1;
-      Z(2,1:N) = 9*gap+1;
-     
-      pos = 2;      
-      handle = 2;      
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
-      testCase.verifyPlotted(handle,Y,Z,...
-        'Не построен график первого хищника для решения B');
+    function testPlotsSolAPredator1PartWhenSolAPlotPartEndsInTheVeryEnd(...
+        testCase)
+      pos = 1;
+      predatorNo = 1;
+      solATF = 6*testCase.gap-1;
+      solBTF = testCase.tf;
+      testCase.verifySolAPredatorPlottedWhenSolATimesAreAlignedWithSolBTimes(...
+        pos,predatorNo,solATF,solBTF,...
+        'Не построен график 1-го хищника для решения A, когда конец выводимых частей решений совпадает с концом самих решений');
     end
     
-    function testPlotsSolutionASecondPredatorPart(testCase)      
-      gap = 100;
-      Y = [0 gap];
-      N = 5;
-      Z(1,1:N) = 2;
-      Z(2,1:N) = 3*gap+2;
-      
-      pos = 3;      
-      handle = 3;      
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
-      testCase.verifyPlotted(handle,Y,Z,...
-        'Не построен график второго хищника для решения A');
+    function testPlotsSolAPredator1PartWhenSolATimesAreNotAlignedWithSolBTimes(...
+        testCase)
+      pos = 1;
+      predatorNo = 1;
+      testCase.verifySolAPredatorPlottedWhenSolATimesAreNotAlignedWithSolBTimes(...
+        pos,predatorNo,...
+        'Не построен график 1-го хищника для решения A, когда времена решения A не совпадают с временами решения B');
     end
     
-    function testPlotsSolutionBSecondPredatorPart(testCase)
-      gap = 100;
-      Y = [2*gap 3*gap];
-      N = 5;
-      Z(1,1:N) = 6*gap+2;
-      Z(2,1:N) = 9*gap+2;
-      
-      pos = 4;      
-      handle = 4;      
-      testCase.setupAxesHandlesToReturnFromSubplot(pos,handle);
-      
-      testCase.verifyPlotted(handle,Y,Z,...
-        'Не построен график второго хищника для решения B');
+    function testPlotsSolBPredator1Part(testCase)
+      pos = 2;
+      predatorNo = 1;
+      testCase.verifySolBPredatorPlotted(pos,predatorNo,testCase.tf,...
+        testCase.tf,'Не построен график 1-го хищника для решения B');
+    end
+    
+    function testPlotsSolAPredator2PartWhenSolATimesAreAlignedWithSolBTimes(testCase)            
+      pos = 3;
+      predatorNo = 2;
+      testCase.verifySolAPredatorPlottedWhenSolATimesAreAlignedWithSolBTimes(...
+        pos,predatorNo,testCase.tf,testCase.tf,...
+        'Не построен график 2-го хищника для решения A, когда времена решения A совпадают с временами решения B');
+    end
+    
+    function testPlotsSolAPredator2PartWhenSolAPlotPartEndsInTheVeryEnd(...
+        testCase)
+      pos = 1;
+      predatorNo = 1;
+      solATF = 6*testCase.gap-1;
+      solBTF = testCase.tf;
+      testCase.verifySolAPredatorPlottedWhenSolATimesAreAlignedWithSolBTimes(...
+        pos,predatorNo,solATF,solBTF,...
+        'Не построен график 2-го хищника для решения A, когда конец выводимых частей решений совпадает с концом самих решений');
+    end
+    
+    function testPlotsSolAPredator2PartWhenSolATimesAreNotAlignedWithSolBTimes(testCase)            
+      pos = 3;
+      predatorNo = 2;
+      testCase.verifySolAPredatorPlottedWhenSolATimesAreNotAlignedWithSolBTimes(...
+        pos,predatorNo,...
+        'Не построен график 2-го хищника для решения A, когда времена решения A не совпадают с временами решения B');
+    end
+    
+    function testPlotsSolBPredator2Part(testCase)
+      pos = 4;
+      predatorNo = 2;
+      testCase.verifySolBPredatorPlotted(pos,predatorNo,testCase.tf,...
+        testCase.tf,'Не построен график 2-го хищника для решения B');
     end
     
     function testSolutionAFirstPredatorPlotFitsInLimits(testCase)    
       handle = 1;      
-      ZMin = 1;
-      ZMax = 301;
+      ZMin = testCase.gap*testCase.nspecies+2;
+      ZMax = 3*testCase.gap*testCase.nspecies+2;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
-        'График первого хищника для решения A не помещается в границах рисунка');
+        'График 1-го хищника для решения A не помещается в границах рисунка');
     end
     
     function testSolutionBFirstPredatorPlotFitsInLimits(testCase)      
       handle = 2;
-      ZMin = 601;
-      ZMax = 901;
+      ZMin = 5*testCase.gap*testCase.nspecies+2;
+      ZMax = 9*testCase.gap*testCase.nspecies+2;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
-        'График первого хищника для решения B не помещается в границах рисунка');
+        'График 1-го хищника для решения B не помещается в границах рисунка');
     end
     
     function testSolutionASecondPredatorPlotFitsInLimits(testCase)
       handle = 3;
-      ZMin = 2;
-      ZMax = 302;
+      ZMin = testCase.gap*testCase.nspecies+3;
+      ZMax = 3*testCase.gap*testCase.nspecies+3;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
-        'График второго хищника для решения A не помещается в границах рисунка');
+        'График 2-го хищника для решения A не помещается в границах рисунка');
     end
     
     function testSolutionBSecondPredatorPlotFitsInLimits(testCase)
       handle = 4;
-      ZMin = 602;
-      ZMax = 902;
+      ZMin = 5*testCase.gap*testCase.nspecies+3;
+      ZMax = 9*testCase.gap*testCase.nspecies+3;
       testCase.verifyPlotFittedInLimits(handle,ZMin,ZMax,...
-        'График второго хищника для решения B не помещается в границах рисунка');
+        'График 2-го хищника для решения B не помещается в границах рисунка');
     end
     
     function testAllPlotsAreInSameZLimits(testCase)      
-      N = 5;
-      centerPointIndex = 3;
-      periodA = 30;
-      periodB = 50;
-      lastPointWithExtremeVarValueIndexA = 1;
-      lastPointWithExtremeVarValueIndexB = 2;
-      preLastPointWithExtremeVarValueIndexA = 3;
-      preLastPointWithExtremeVarValueIndexB = 4;
-      testCase.setupSolutionsToLoad(N,centerPointIndex,periodA,periodB,...
-        lastPointWithExtremeVarValueIndexA,...
-        lastPointWithExtremeVarValueIndexB,...
-        preLastPointWithExtremeVarValueIndexA,...
-        preLastPointWithExtremeVarValueIndexB);            
+      testCase.setupAlignedSolutionsOfSameLengthToLoadForNEqualTo3();            
       testCase.act();
       firstArgsPassedInToAxis = testCase.argsPassedInToAxis(1);
       expNSameZLimAxis = 4;
@@ -697,6 +652,34 @@ classdef DoPlotPredatorSpatiotemporalDistributionsCoreTest < ...
           && a.lims(6) == firstArgsPassedInToAxis.lims(6),...
         testCase.argsPassedInToAxis))),expNSameZLimAxis,...
         'Графики построены в разных пределах по высоте');
+    end
+    
+    function testPlot1LastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        testCase)
+      pos = 1;
+      testCase.verifyLastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        pos);
+    end
+    
+    function testPlot2LastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        testCase)
+      pos = 2;
+      testCase.verifyLastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        pos);
+    end
+    
+    function testPlot3LastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        testCase)
+      pos = 3;
+      testCase.verifyLastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        pos);
+    end
+    
+    function testPlot4LastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        testCase)
+      pos = 4;
+      testCase.verifyLastYTickIsNearestIntegerLessThanOrEqualToLastTime(...
+        pos);
     end
   end
   

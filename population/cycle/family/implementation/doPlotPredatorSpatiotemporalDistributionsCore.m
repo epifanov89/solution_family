@@ -1,6 +1,6 @@
 function doPlotPredatorSpatiotemporalDistributionsCore(currentDirName,...
-  load,getLastRowWithExtremeElementValue,getPeriod,getSolutionPart,...
-  subplot,plot3D,set,axis,xlabel,ylabel,zlabel )
+  load,getLastRowWithExtremeElementValue,subplot,plot3D,set,axis,...
+  xlabel,ylabel,zlabel )
 
 curDirName = currentDirName();
 famDirName = strcat(curDirName,...
@@ -22,43 +22,61 @@ sz = size(solA);
 nvar = sz(2);
 N = nvar/nspecies;
 centerPointIndex = fix((N+2)/2);
-preyCenterPointVarIndex = centerPointIndex;
 firstPredatorCenterPointVarIndex = N+centerPointIndex;
 
-[~,lastPointWithMinPreyDensityIndexA] = ...
+maxExtremumKind = 'max';
+
+[~,solALastPtWithPredator1Max] = ...
   getLastRowWithExtremeElementValue(solA,...
-  firstPredatorCenterPointVarIndex,'min');
-
-[~,preLastPointWithMinPreyDensityIndexA] = ...
+    firstPredatorCenterPointVarIndex,maxExtremumKind);
+  
+[~,solAPreLastPtWithPredator1Max] = ...
   getLastRowWithExtremeElementValue(solA,...
-  firstPredatorCenterPointVarIndex,'min',...
-lastPointWithMinPreyDensityIndexA);
-
-[~,lastPointWithMinPreyDensityIndexB] = ...
+    firstPredatorCenterPointVarIndex,maxExtremumKind,...
+    solALastPtWithPredator1Max);
+  
+[~,solALastPtWithPredator1MinBeforePreLastPtWithPredator1Max] = ...
+  getLastRowWithExtremeElementValue(solA,...
+    firstPredatorCenterPointVarIndex,'min',...
+    solAPreLastPtWithPredator1Max);
+    
+[~,solBLastPtWithPredator1Max] = ...
   getLastRowWithExtremeElementValue(solB,...
-  firstPredatorCenterPointVarIndex,'min');
+    firstPredatorCenterPointVarIndex,maxExtremumKind);
 
-[~,preLastPointWithMinPreyDensityIndexB] = ...
+[~,solBPreLastPtWithPredator1Max] = ...
   getLastRowWithExtremeElementValue(solB,...
-  firstPredatorCenterPointVarIndex,'min',...
-  lastPointWithMinPreyDensityIndexB);
+    firstPredatorCenterPointVarIndex,maxExtremumKind,...
+    solBLastPtWithPredator1Max);
 
-fixedVarIndex = preyCenterPointVarIndex;
-fixedVarValue = 0.5;
+[~,solBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max] = ...
+  getLastRowWithExtremeElementValue(solB,...
+    firstPredatorCenterPointVarIndex,'min',...
+    solBPreLastPtWithPredator1Max);
 
-periodA = getPeriod(tA,solA,fixedVarIndex,fixedVarValue);
-periodB = getPeriod(tB,solB,fixedVarIndex,fixedVarValue);
+pt = solALastPtWithPredator1MinBeforePreLastPtWithPredator1Max;
+while pt <= length(tA) && tA(pt) <= ...
+    tA(solALastPtWithPredator1MinBeforePreLastPtWithPredator1Max)+...
+      tB(solBLastPtWithPredator1Max)-...
+      tB(solBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max)
+  pt = pt+1;
+end
 
-tspan = 1.5*min(periodA,periodB);
+solAPartForPlotIndexFinish = pt-1;
 
-[tplotA,wplotA] = getSolutionPart(tA,solA,...
-  preLastPointWithMinPreyDensityIndexA,tspan);
+tplotA = tA(solALastPtWithPredator1MinBeforePreLastPtWithPredator1Max:...
+    solAPartForPlotIndexFinish)-...
+  tA(solALastPtWithPredator1MinBeforePreLastPtWithPredator1Max);
+wplotA = solA(solALastPtWithPredator1MinBeforePreLastPtWithPredator1Max:...
+  solAPartForPlotIndexFinish,:);
 
-[tplotB,wplotB] = getSolutionPart(tB,solB,...
-  preLastPointWithMinPreyDensityIndexB,tspan);
+tplotB = tB(solBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max:...
+    solBLastPtWithPredator1Max)-...
+  tB(solBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max);
+wplotB = solB(solBLastPtWithPredator1MinBeforePreLastPtWithPredator1Max:...
+  solBLastPtWithPredator1Max,:);
 
 [tplotSparseA,wplotSparseA] = sparseSolution(tplotA,wplotA);
-
 [tplotSparseB,wplotSparseB] = sparseSolution(tplotB,wplotB);
 
 X = linspace(0,1,N+1);
@@ -66,17 +84,24 @@ X = linspace(0,1,N+1);
 maxDensity = max(maxMatrixElement(wplotSparseA),...
   maxMatrixElement(wplotSparseB));
 
+fontNameKey = 'FontName';
+fontNameVal = 'Times';
+fontSizeKey = 'FontSize';
+fontSizeVal = 36;
+interpreterKey = 'Interpreter';
+interpreterVal = 'latex';
+
+species = 2;
 pos = 1;
-
-species = 2;
-plotSpeciesDensity(tplotSparseA,wplotSparseA);
-species = 2;
-plotSpeciesDensity(tplotSparseB,wplotSparseB);
+plotSpeciesDensity(tplotSparseA,wplotSparseA,species,pos);
+pos = pos+1;
+plotSpeciesDensity(tplotSparseB,wplotSparseB,species,pos);
 
 species = 3;
-plotSpeciesDensity(tplotSparseA,wplotSparseA);
-species = 3;
-plotSpeciesDensity(tplotSparseB,wplotSparseB);
+pos = pos+1;
+plotSpeciesDensity(tplotSparseA,wplotSparseA,species,pos);
+pos = pos+1;
+plotSpeciesDensity(tplotSparseB,wplotSparseB,species,pos);
 
   function el = maxMatrixElement(matr)
     el = max(max(matr));
@@ -84,24 +109,33 @@ plotSpeciesDensity(tplotSparseB,wplotSparseB);
 
   function [tsparse,wsparse] = sparseSolution(t,w)
     gap = 100;
-    npt = length(t)/gap*gap;
-    tsparse = t(1:gap:npt);
-    wsparse = w(1:gap:npt,:);
+    tsparse = t(1:gap:length(t));
+    wsparse = w(1:gap:length(t),:);
   end
 
-  function plotSpeciesDensity(tplot,wplot)
+  function plotSpeciesDensity(tplot,wplot,species,pos)
     nrow = 2;
     ncol = 2;
-    h = subplot(nrow,ncol,pos);
-    pos = pos+1;
+    h = subplot(nrow,ncol,pos);    
     gr = plot3D(h,X(1:N),tplot,wplot(:,(species-1)*N+1:species*N));
     set(gr,'EdgeColor',[0 0 0]);
-    set(h,'FontSize',36,'FontName','Times','XTick',[0 1],'YTick',[0 12],'ZTick',[0.4 0.8]);
+    set(h,fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,'XTick',[0 1],...
+      'YTick',[0 fix(tplot(end))],'ZTick',[0.4 0.8]);
     axis(h,[0 1 0 inf 0 maxDensity]);
-    xlabel('$x$','FontSize',36,'FontName','Times','Interpreter','latex');
-    ylabel('$t$','FontSize',36,'FontName','Times','Interpreter','latex');
-    zlabel(sprintf('$%s$',char('u'+species-1)),...
-      'rot',0,'FontSize',36,'FontName','Times','Interpreter','latex');
+    h = xlabel('$x$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
+      interpreterKey,interpreterVal);
+    setPos(h,[-4.042 -67.928 5.125]);
+    h = ylabel('$t$',fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
+      interpreterKey,interpreterVal);
+    setPos(h,[-4.733 -63.392 5.336]);
+    h = zlabel(sprintf('$%s$',char('u'+species-1)),'rot',0,...
+      fontSizeKey,fontSizeVal,fontNameKey,fontNameVal,...
+      interpreterKey,interpreterVal);
+    setPos(h,[-0.525 5.523 1.7]);
+    
+    function setPos(h,position)
+      set(h,'Position',position);
+    end
   end
 end
 
